@@ -1,4 +1,4 @@
-baseURL: "https://hugo-profile.netlify.app"
+baseURL: "https://barbosamaatheus.github.io/"
 languageCode: "en-us"
 title: "Matheus Barbosa"
 theme: hugo-profile
@@ -100,10 +100,10 @@ params:
   hero:
     enable: true
     intro: "Hi, my name is"
-    title: "Matheus."
+    title: "Matheus Barbosa."
     # subtitle: "I build things for the web"
     content: "Phd student in Software Engineering and Programming Language and Passionate about Development"
-    image: /images/hero.svg
+    #image: /images/hero.svg
     button:
       enable: true
       name: "Resume"
@@ -114,6 +114,9 @@ params:
           url: https://github.com/barbosamaatheus
         - icon: fab fa-linkedin
           url: https://www.linkedin.com/in/matheus-barbosa-188720142/
+        - icon: fa fa-envelope
+          url: mailto:mbo@cin.ufpe.br
+
       # customIcons:
       #  - icon: /fav.png
       #    url: "https://example.com"
@@ -122,7 +125,7 @@ params:
   about:
     enable: true
     title: "About Me"
-    image: "/images/me.png"
+    #image: "/images/me.png"
     content: |-
       Graduated in Lic. in Computer Science from the Federal University of Paraíba;
 
@@ -135,6 +138,7 @@ params:
       Creator and maintainer of the English-Talking-Api open source project;
 
       CTO at Knowledge Serviços de Tecnologia
+
     skills:
       enable: false
       title: "Here are a few technologies I've been working with recently:"
@@ -230,12 +234,13 @@ params:
         date: "2020 - 2022"
         #GPA: "3.9 out of 5.0"
         content: |-
-          We investigate static and dynamic analysis techniques to develop semantic merge tools that detect conflicts missed by current tools.
+          DETECÇÃO DE CONFLITOS SEMÂNTICOS VIA ANÁLISE ESTÁTICA DE SUBSTITUIÇÃO DE ATRIBUIÇÃO
 
         featuredLink:
           enable: true
-          name: "My academic record"
-          url: "https://example.com"
+          name: "My master's thesis"
+          url: "https://repositorio.ufpe.br/handle/123456789/44697"
+
       - title: "Graduated in Lic. in Computer Science"
         date: "2015 - 2020"
         school:
@@ -243,83 +248,57 @@ params:
           url: "http://www.ccae.ufpb.br/"
         #GPA: "4.2 out of 5.0"
         content: |-
-          1 ano como monitor voluntario de linguagem de programação (JAVA);
+          1 year as a volunteer programming language monitor (JAVA);
 
-          1 ano e meio como integrante do PIBID - Programa Institucional de Bolsas de Iniciação à Docência;
+          1 year and a half as exclusive to PIBID - Institutional Scholarship Program for Teaching Initiation;
 
-          Coordenador Adjunto do projeto "Computação Plugada - Projeto e desenvolvimento de um aplicativo para desenvolver o pensamento computacional.
+          Assistant coordinator of the project “Computação Plugada - Projeto e desenvolvimento de um aplicativo para desenvolver o pensamento computacional".
 
         featuredLink:
           enable: true
-          name: "My academic record"
-          url: "https://example.com"
+          name: "My course completion work"
+          url: "https://sites.google.com/view/computacaoplugada/publica%C3%A7%C3%B5es?authuser=0#h.p_p3Auv9wc67DM"
 
   # Achievements
   achievements:
-    enable: false
+    enable: true
     items:
-      - title: Google kickstart runner
-        content: I solved all problems with optimal solution.
-        url: https://example.com
-      - title: Facebook Hackathon Winner
-        content: Developed a product using Artificial Intelligence.
-      - title: Hugo Profile
-        content: Developed a theme and getting 1K+ downloads per month.
-        url: "https://github.com/gurusabarish/hugo-profile"
-      - title: Microsoft Imagine Runner
-        content: We are developed a product which can help others.
-      - title: Google Summer of Code
-        content: Contributed to a open source project.
-        url: https://example.com
+      - title: Detecção de conflitos semânticos via análise estática de substituição de atribuição
+        content: XXXVI Simpósio Brasileiro de Engenharia de Software, 2022.
+      - title: Detecção de conflitos semânticos via análise estática de substituição de atribuição
+        content: Masters dissertation, 2022
+        url: "https://repositorio.ufpe.br/handle/123456789/44697"
+      - title: Avaliando um Aplicativo Android para Apoiar a Aplicação de Exercícios de Computação Desplugada
+        content: Revista Brasileira de Informática na Educação, V. 29 (2021)
+        url: "http://ojs.sector3.com.br/index.php/rbie/article/view/v29p798"
+      - title: "Computação Plugada: Um Aplicativo Android Para Apoiar a Aplicação de Exercícios de Computação Desplugada"
+        content: XXVII Workshop sobre Educação em Computação, 2019.
+        url: https://sol.sbc.org.br/index.php/wei/article/view/6654
+      - title: "Ensino de computação no ensino médio utilizando técnicas da Computação Desplugada: um relato de experiência"
+        content: Congresso sobre Tecnologias na Educação (Ctrl+E 2017)
+        url: http://ceur-ws.org/Vol-1877/CtrlE2017_AR_16_134.pdf
 
   # projects
   projects:
     enable: true
     items:
-      - title: Hugo Profile
-        content: A highly customizable and mobile first Hugo template for personal portfolio and blog.
-        image: /images/projects/profile.png
+      - title: Semantic Merge Tools
+        content: We investigate static and dynamic analysis techniques to develop semantic merge tools that detect conflicts missed by current tools.
+        image: /images/projects/semantic-merge-tools.png
         featured:
           name: Demo
-          link: https://hugo-profile.netlify.app
+          link: https://pauloborba.cin.ufpe.br/project/semantic-merge/
         # badges:
         #   - "Hugo"
         #   - "Bootstrap"
         #   - "Javascript"
-        links:
-          - icon: fa fa-envelope
-            url: mailto:?subject=Hugo%20Profile%20Template&body=Check%20it%20out:%20https%3a%2f%2fhugo-profile.netlify.app%2fblog%2fmarkdown-syntax%2f
-          - icon: fab fa-github
-            url: https://github.com/gurusabarish/hugo-profile
-          - icon: fab fa-twitter
-            url: https://twitter.com/intent/tweet?text=Check+it+out:&url=https%3A%2F%2Fgithub.com%2Fgurusabarish%2Fhugo-profile
-
-      - title: Image Converter
-        content: A web app to convert image to pdf, png to jpg, png to jpg and png to webp without database using django.
-        image: /images/projects/converter.jpg
-        featured:
-          name: Demo
-          link: https://django-converter.herokuapp.com
-        # badges:
-        #   - "Django"
-        #   - "Bootstrap"
-        links:
-          - icon: fab fa-github
-            url: https://github.com/gurusabarish/converter
-
-      - title: Hugo Profile V2
-        content: A clean and simple Hugo template for personal portfolio and blog.
-        image: /images/projects/profile2.jpg
-        featured:
-          name: Demo V2
-          link: https://hugo-profile-2.netlify.app
-        # badges:
-        #   - "Hugo"
-        #   - "Bootstrap"
-        #   - "Javascript"
-        links:
-          - icon: fab fa-github
-            url: https://github.com/gurusabarish/HugoProfileV2
+        #links:
+        #   - icon: fa fa-envelope
+        #    url: mailto:?subject=Hugo%20Profile%20Template&body=Check%20it%20out:%20https%3a%2f%2fhugo-profile.netlify.app%2fblog%2fmarkdown-syntax%2f
+        #  - icon: fab fa-github
+        #    url: https://github.com/gurusabarish/hugo-profile
+        #  - icon: fab fa-twitter
+        #    url: https://twitter.com/intent/tweet?text=Check+it+out:&url=https%3A%2F%2Fgithub.com%2Fgurusabarish%2Fhugo-profile
 
   #Contact
   contact:
