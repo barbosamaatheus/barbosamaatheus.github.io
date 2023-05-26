@@ -263,8 +263,9 @@ params:
   achievements:
     enable: true
     items:
-      - title: Detecção de conflitos semânticos via análise estática de substituição de atribuição
+      - title: Semantic conflict detection with overriding assignment analysis.
         content: XXXVI Simpósio Brasileiro de Engenharia de Software, 2022.
+        url: "https://dl.acm.org/doi/10.1145/3555228.3555242"
       - title: Detecção de conflitos semânticos via análise estática de substituição de atribuição
         content: Masters dissertation, 2022
         url: "https://repositorio.ufpe.br/handle/123456789/44697"
