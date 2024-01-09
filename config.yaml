@@ -140,79 +140,114 @@ params:
       CTO at Knowledge Serviços de Tecnologia
 
     skills:
-      enable: false
+      enable: true
       title: "Here are a few technologies I've been working with recently:"
       items:
-        - "HTML"
-        - "CSS"
-        - "JavaScript"
+        - "React Native"
         - "React"
+        - "JavaScript/TypeScript"
         - "Node"
-        - "Express"
+        - "Java"
 
   # Experience
   experience:
-    enable: false
+    enable: true
     items:
-      - job: "Senior Software Developer"
-        company: "Facebook"
-        companyUrl: "https://example.com"
-        date: "Jan 2022 - present"
+       - job: "Mobile Software Developer"
+        date: "Jan 2023 - present"
         featuredLink:
           enable: true
           name: "View the project"
-          url: "https://example.com"
-        content: "I am currently working as a software developer at [example org.](https://example.com) in San Francisco, CA. I am currently working on a project that will be used to help people find the best way to get around the city."
+          url: "hhttps://apps.apple.com/br/app/jo%C3%A3o-pessoa-na-palma-da-m%C3%A3o/id6446417870"
+        content: "The "João Pessoa in the palm of your hand" application's main objective is to offer citizens of the city of João Pessoa, in Paraíba, a digital platform that allows municipal services to be carried out in an agile, easy and safe way."
 
-      - job: "Software Developer"
-        company: "Amazon"
-        companyUrl: "https://example.com"
-        date: "Sep 2020 - Dec 2021"
+      - job: "Mobile Software Developer"
+        date: "2021 - 2022"
         featuredLink:
           enable: true
-          url: "https://example.com"
-        info:
-          enable: true
-          content: I worked as a software developer for more than one year in Amazon.
-        content: |
-          I am currently working as a software developer at [example org.](https://example.com) in San Francisco, CA. I am currently working on a project that will be used to help people find the best way to get around the city.
+          name: "View the project"
+          url: "https://apps.apple.com/br/app/vacina-jo%C3%A3o-pessoa/id1557660770"
+        content: "Official application for the vaccination campaign against COVID-19 in the city halls of João Pessoa and Campina Grande - PB."
 
-          - Lead backend developer for a product.
-          - Created a frontend design for a product.
-
-      - job: "Junior Software Developer"
-        company: "Apple"
-        companyUrl: "https://example.com"
-        date: "Jan 2020 - Aug 2020"
-        info:
-          enable: false
+      - job: "Full Stack Software Developer"
+        date: "2021"
         featuredLink:
           enable: true
-          url: "https://example.com"
-        content: |
-          I am currently working as a software developer at [example org.](https://example.com) in San Francisco, CA. I am currently working on a project that will be used to help people find the best way to get around the city.
+          name: "View the project"
+          url: "https://ruymolina.adv.br/"
+        content: "Application and official website of the Ruy Molina Advocacia office."
 
-          - Lead backend developer for a product.
-          - Created a frontend design for a product.
+      - job: "Full Stack Software Developer"
+        date: "2021"
+        content: "Crytec Solutions official application and website."
 
-      - job: "UI/UX Designer"
-        company: "Netflix"
-        companyUrl: "https://example.com"
-        date: "June 2017 - Nov 2019"
+    - job: "Open Source Project Manager"
+        date: "2020"
         featuredLink:
           enable: true
-          url: "https://example.com"
-        content: |
-          I am currently working as a software developer at [example org.](https://example.com) in San Francisco, CA. I am currently working on a project that will be used to help people find the best way to get around the city.
+          name: "View the project"
+          url: "https://github.com/barbosamaatheus/english-talking-api"
+        content: "AThe english-talking-api project is a Rest API that aims to provide users with the possibility of carrying out dialogues in English where conversations and responses are recorded and evaluated by the users themselves."
 
-          - Lead backend developer for a product.
-          - Created a frontend design for a product.
+  
+      - job: "Mobile Software Developer"
+        date: "2020"
+        featuredLink:
+          enable: true
+          name: "View the project"
+          url: "https://play.google.com/store/apps/details?id=com.knowledge.minefield"
+        content: "Minesweeper Game:"
 
-      - job: "Product Designer"
-        company: "Google"
-        companyUrl: "https://example.com"
-        date: "Feb 2016 - Mar 2017"
-        content: "I am currently working as a software developer at [example org.](https://example.com) in San Francisco, CA. I am currently working on a project that will be used to help people find the best way to get around the city."
+
+      # - job: "Software Developer"
+      #   company: "Amazon"
+      #   companyUrl: "https://example.com"
+      #   date: "Sep 2020 - Dec 2021"
+      #   featuredLink:
+      #     enable: true
+      #     url: "https://example.com"
+      #   info:
+      #     enable: true
+      #     content: I worked as a software developer for more than one year in Amazon.
+      #   content: |
+      #     I am currently working as a software developer at [example org.](https://example.com) in San Francisco, CA. I am currently working on a project that will be used to help people find the best way to get around the city.
+
+      #     - Lead backend developer for a product.
+      #     - Created a frontend design for a product.
+
+      # - job: "Junior Software Developer"
+      #   company: "Apple"
+      #   companyUrl: "https://example.com"
+      #   date: "Jan 2020 - Aug 2020"
+      #   info:
+      #     enable: false
+      #   featuredLink:
+      #     enable: true
+      #     url: "https://example.com"
+      #   content: |
+      #     I am currently working as a software developer at [example org.](https://example.com) in San Francisco, CA. I am currently working on a project that will be used to help people find the best way to get around the city.
+
+      #     - Lead backend developer for a product.
+      #     - Created a frontend design for a product.
+
+      # - job: "UI/UX Designer"
+      #   company: "Netflix"
+      #   companyUrl: "https://example.com"
+      #   date: "June 2017 - Nov 2019"
+      #   featuredLink:
+      #     enable: true
+      #     url: "https://example.com"
+      #   content: |
+      #     I am currently working as a software developer at [example org.](https://example.com) in San Francisco, CA. I am currently working on a project that will be used to help people find the best way to get around the city.
+
+      #     - Lead backend developer for a product.
+      #     - Created a frontend design for a product.
+
+      # - job: "Product Designer"
+      #   company: "Google"
+      #   companyUrl: "https://example.com"
+      #   date: "Feb 2016 - Mar 2017"
+      #   content: "I am currently working as a software developer at [example org.](https://example.com) in San Francisco, CA. I am currently working on a project that will be used to help people find the best way to get around the city."
 
   # Education
   education:
