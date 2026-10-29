@@ -13,6 +13,9 @@ sections:
     content:
       title: Selected Projects
       text: I enjoy making things. Here are a selection of projects that I have worked on over the years.
+      count: 0
+      sort_by: Weight
+      sort_ascending: true
       filters:
         folders:
           - projects

@@ -23,10 +23,12 @@ superuser: true
 highlight_name: true
 
 # Role/position/tagline
-role: Phd Student
+role: Professor at IFPE & PhD Student
 
 # Organizations/Affiliations to display in Biography blox
 organizations:
+  - name: IFPE Campus Belo Jardim
+    url: https://www.ifpe.edu.br/campus/belo-jardim
   - name: Cin UFPE
     url: https://portal.cin.ufpe.br/
 
@@ -34,8 +36,14 @@ organizations:
 # Need to use another icon? Simply download the SVG icon to your `assets/media/icons/` folder.
 profiles:
   - icon: at-symbol
+    url: "mailto:matheus.barbosa@belojardim.ifpe.edu.br"
+    label: "E-mail (IFPE): matheus.barbosa@belojardim.ifpe.edu.br"
+  - icon: academic-cap
     url: "mailto:mbo2@cin.ufpe.br"
-    label: E-mail Me
+    label: "E-mail (UFPE): mbo2@cin.ufpe.br"
+  - icon: envelope
+    url: "mailto:maatheusb96@gmail.com"
+    label: "E-mail: maatheusb96@gmail.com"
   #  - icon: brands/x
   #    url: https://twitter.com/AlexAIResearch
   - icon: brands/github
@@ -83,6 +91,14 @@ education:
       url: "https://sites.google.com/view/computacaoplugada/publica%C3%A7%C3%B5es?authuser=0#h.p_p3Auv9wc67DM"
 
 work:
+  - position: Professor of Basic, Technical and Technological Education (EBTT) - Software Engineering
+    company_name: Instituto Federal de Pernambuco (IFPE) - Campus Belo Jardim
+    company_url: "https://www.ifpe.edu.br/campus/belo-jardim"
+    company_logo: ""
+    date_start: 2026-07-28
+    summary: |2-
+      Professor in the Software Engineering area.
+      Coordinator of the extension project GirliES - Garotas na Engenharia de Software, which encourages girls from local high schools to pursue careers in technology.
   - position: Professor of Higher Education
     company_name: Universidade Federal da Paraíba
     company_url: "https://www.ufpb.br/dcx"
@@ -169,4 +185,4 @@ languages:
 #      Recognized for contributions to scaling laws in deep learning.
 ---
 
-Matheus Barbosa is a PhD student in Software Engineering and Programming Languages, passionate about development. He holds a Bachelor's degree in Computer Science from the Federal University of Paraíba, and a Master's in Software Engineering and Programming Languages from the Federal University of Pernambuco.
+Matheus Barbosa is a Professor of Software Engineering at the Federal Institute of Pernambuco (IFPE), Campus Belo Jardim, where he coordinates the extension project GirliES - Garotas na Engenharia de Software. He is also a PhD student in Software Engineering and Programming Languages, passionate about development. He holds a Bachelor's degree in Computer Science from the Federal University of Paraíba, and a Master's in Software Engineering and Programming Languages from the Federal University of Pernambuco.
