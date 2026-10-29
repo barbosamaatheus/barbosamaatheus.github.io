@@ -23,7 +23,7 @@ superuser: true
 highlight_name: true
 
 # Role/position/tagline
-role: Professor at IFPE & PhD Student
+role: Professor at IFPE Campus Belo Jardim & PhD Student at Cin UFPE
 
 # Organizations/Affiliations to display in Biography blox
 organizations:
@@ -153,7 +153,7 @@ skills:
         icon: book-open
 
 languages:
-  - name: Portuguse
+  - name: Portuguese
     percent: 100
   - name: English
     percent: 80

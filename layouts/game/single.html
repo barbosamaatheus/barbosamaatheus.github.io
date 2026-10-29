@@ -1,0 +1,978 @@
+{{- /* Merge Village: a gamified, standalone version of the site drawn like a git history.
+     All content is read from the regular site folders at build time, so updating
+     content/ updates both the classic site and the village. */ -}}
+{{- $author := site.GetPage "authors/admin" -}}
+{{- $fmt := "January 2006" -}}
+
+{{- $profiles := slice -}}
+{{- range $author.Params.profiles -}}
+  {{- $profiles = $profiles | append (dict "icon" .icon "url" .url "label" (.label | default "")) -}}
+{{- end -}}
+
+{{- $education := slice -}}
+{{- range $author.Params.education -}}
+  {{- $end := "" -}}{{- with .date_end -}}{{- $end = (time .).Format $fmt -}}{{- end -}}
+  {{- $btn := dict -}}{{- with .button -}}{{- $btn = dict "text" .text "url" .url -}}{{- end -}}
+  {{- $education = $education | append (dict "area" .area "institution" .institution "summary" (.summary | default "" | plainify | strings.TrimSpace) "start" ((time .date_start).Format $fmt) "end" $end "button" $btn) -}}
+{{- end -}}
+
+{{- $work := slice -}}
+{{- range $author.Params.work -}}
+  {{- $end := "" -}}{{- with .date_end -}}{{- $end = (time .).Format $fmt -}}{{- end -}}
+  {{- $work = $work | append (dict "position" .position "company" .company_name "start" ((time .date_start).Format $fmt) "end" $end "summary" (.summary | default "" | plainify | strings.TrimSpace)) -}}
+{{- end -}}
+
+{{- $skills := slice -}}
+{{- range $author.Params.skills -}}
+  {{- $items := slice -}}{{- range .items -}}{{- $items = $items | append .name -}}{{- end -}}
+  {{- $skills = $skills | append (dict "name" .name "items" $items) -}}
+{{- end -}}
+
+{{- $languages := slice -}}
+{{- range $author.Params.languages -}}{{- $languages = $languages | append (dict "name" .name "percent" (.percent | default 0)) -}}{{- end -}}
+
+{{- $orgs := slice -}}
+{{- range $author.Params.organizations -}}{{- $orgs = $orgs | append .name -}}{{- end -}}
+
+{{- $pubs := slice -}}
+{{- range (where site.RegularPages "Section" "publications").ByDate.Reverse -}}
+  {{- $names := slice -}}
+  {{- range .Params.authors -}}
+    {{- $n := . | strings.TrimSuffix "," -}}
+    {{- if eq $n "admin" -}}{{- $n = $author.Title -}}{{- end -}}
+    {{- $names = $names | append $n -}}
+  {{- end -}}
+  {{- $pubs = $pubs | append (dict "title" .Title "year" (.Date.Format "2006") "venue" (.Params.publication_short | default .Params.publication | default "" | plainify) "authors" $names "url" .RelPermalink) -}}
+{{- end -}}
+
+{{- $projects := slice -}}
+{{- range (where site.RegularPages "Section" "projects").ByWeight -}}
+  {{- $projects = $projects | append (dict "title" .Title "summary" (.Summary | plainify | strings.TrimSpace | truncate 220) "url" .RelPermalink) -}}
+{{- end -}}
+
+{{- $events := slice -}}
+{{- range (where site.RegularPages "Section" "events").ByDate.Reverse -}}
+  {{- $place := slice -}}
+  {{- with .Params.address -}}{{- with .city -}}{{ $place = $place | append . }}{{- end -}}{{- with .country -}}{{ $place = $place | append . }}{{- end -}}{{- end -}}
+  {{- $events = $events | append (dict "title" .Title "summary" (.Params.summary | default "" | plainify) "date" (.Date.Format $fmt) "place" (delimit $place ", ") "url" .RelPermalink) -}}
+{{- end -}}
+
+{{- $courses := slice -}}
+{{- with site.GetPage "courses" -}}
+  {{- range .Sections -}}{{- $courses = $courses | append (dict "title" .Title "where" (.LinkTitle | default "") "url" .RelPermalink) -}}{{- end -}}
+{{- end -}}
+
+{{- /* The "My Research" text block on the home page feeds the Merge Lab. */ -}}
+{{- $research := "" -}}
+{{- range site.Home.Params.sections -}}
+  {{- if eq .block "markdown" -}}{{- with .content -}}{{- if in (.title | default "") "Research" -}}{{- $research = $.RenderString (.text | default "") -}}{{- end -}}{{- end -}}{{- end -}}
+{{- end -}}
+
+{{- $data := dict
+    "name" $author.Title
+    "role" ($author.Params.role | default "")
+    "orgs" $orgs
+    "bio" (string $author.Content)
+    "research" (string $research)
+    "interests" ($author.Params.interests | default slice)
+    "skills" $skills
+    "languages" $languages
+    "profiles" $profiles
+    "education" $education
+    "work" $work
+    "publications" $pubs
+    "projects" $projects
+    "events" $events
+    "courses" $courses
+    "links" (dict "home" ("" | relURL) "publications" ("publications/" | relURL) "events" ("events/" | relURL) "projects" ("projects/" | relURL))
+-}}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ .Title }} | {{ $author.Title }}</title>
+<meta name="description" content="{{ .Summary | plainify }}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏘️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --panel:#f6f4ff; --panel-2:#e8e4fa; --ink:#1f1d36; --muted:#55527a; --line:#1f1d36; --shadow:#1f1d36;
+  --main:#c98a14; --academia:#c2477e; --industry:#3a7fc8; --ok:#23845a; --bad:#c23c33;
+  --link:#2d5fa8; --outside:#5f8f55; --scrim:rgba(31,29,54,.45);
+  --tint-l:rgba(194,71,126,.16); --tint-r:rgba(58,127,200,.16); --tint-c:rgba(194,60,51,.14);
+  --pixel:"Pixelify Sans","Courier New",monospace;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --code:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --panel:#25223f; --panel-2:#302c52; --ink:#efecff; --muted:#b5b0d8; --line:#efecff; --shadow:#0b0a17;
+    --main:#f0b545; --academia:#e5709f; --industry:#6ea6e8; --ok:#5cc996; --bad:#ff7b72;
+    --link:#a8c8ff; --outside:#1c2c27; --scrim:rgba(5,5,15,.55);
+    --tint-l:rgba(229,112,159,.2); --tint-r:rgba(110,166,232,.2); --tint-c:rgba(255,123,114,.18);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --panel:#25223f; --panel-2:#302c52; --ink:#efecff; --muted:#b5b0d8; --line:#efecff; --shadow:#0b0a17;
+  --main:#f0b545; --academia:#e5709f; --industry:#6ea6e8; --ok:#5cc996; --bad:#ff7b72;
+  --link:#a8c8ff; --outside:#1c2c27; --scrim:rgba(5,5,15,.55);
+  --tint-l:rgba(229,112,159,.2); --tint-r:rgba(110,166,232,.2); --tint-c:rgba(255,123,114,.18);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;overflow:hidden;background:var(--outside);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-underline-offset:3px}
+canvas#world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none;cursor:pointer}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--main);outline-offset:2px}
+
+.box{background:var(--panel);border:3px solid var(--line);box-shadow:5px 5px 0 var(--shadow)}
+.btn{font-family:var(--pixel);font-weight:700;font-size:15px;letter-spacing:.02em;background:var(--panel);color:var(--ink);border:3px solid var(--line);box-shadow:3px 3px 0 var(--shadow);padding:7px 12px;cursor:pointer;line-height:1.2}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow)}
+.btn.primary{background:var(--ink);color:var(--panel)}
+.btn.small{font-size:13px;padding:5px 9px}
+kbd{font-family:var(--pixel);font-size:.85em;border:2px solid currentColor;padding:0 5px;margin-left:6px}
+
+/* HUD */
+.hud{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;pointer-events:none;z-index:5}
+.hud > *{pointer-events:auto}
+.who{padding:8px 12px}
+.who h1{font-family:var(--pixel);font-size:20px;line-height:1.1;margin:0;font-weight:700}
+.who p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.hud-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.progress{font-family:var(--pixel);font-size:14px;padding:6px 10px;display:flex;align-items:center;gap:8px}
+.progress .pips{display:flex;gap:3px}
+.progress .pip{width:8px;height:8px;border:2px solid var(--line)}
+.progress .pip.on{background:var(--ok);border-color:var(--ok)}
+.progress.pulse{animation:pulse .5s steps(3)}
+@keyframes pulse{50%{transform:scale(1.12)}}
+
+.gitlog{position:fixed;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);width:270px;padding:8px 10px 10px;z-index:4;font-family:var(--code);font-size:12px}
+.gitlog h2{font-family:var(--pixel);font-size:14px;margin:0 0 4px;font-weight:700}
+.gitlog ol{list-style:none;margin:0;padding:0}
+.gitlog li{display:flex;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 0}
+.gitlog li .h{color:var(--main);font-weight:700}
+.gitlog li.fresh{animation:fresh 1.2s steps(6)}
+@keyframes fresh{0%{background:var(--panel-2)}100%{background:transparent}}
+
+.hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);padding:8px 14px;font-size:14px;z-index:4;max-width:calc(100% - 24px);text-align:center;transition:opacity .4s}
+.hint.gone{opacity:0;pointer-events:none}
+body:has(.prompt:not([hidden])) .hint{opacity:0;pointer-events:none}
+
+.prompt{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:6;font-size:17px;padding:10px 16px}
+.prompt[hidden]{display:none}
+.prompt:active{transform:translate(calc(-50% + 2px),2px)}
+
+/* Dialogs */
+.dialog{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);width:min(700px,calc(100% - 24px));max-height:min(72vh,680px);display:flex;flex-direction:column;z-index:10}
+.dialog[hidden]{display:none}
+.dialog header{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:3px solid var(--line)}
+.dialog .emoji{font-size:30px;line-height:1}
+.dialog h2{font-family:var(--pixel);font-size:22px;margin:0;line-height:1.1}
+.dialog .sub{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:2px}
+.swatch{display:inline-block;width:10px;height:10px;border:2px solid var(--line)}
+.dialog .close{margin-left:auto}
+.dialog .body{overflow:auto;padding:14px 18px 18px;overscroll-behavior:contain}
+.body p{margin:0 0 12px;max-width:62ch}
+.body .lead{font-size:18px}
+.body h3{font-family:var(--pixel);font-size:16px;margin:16px 0 6px}
+.body ul.plain{list-style:none;padding:0;margin:0 0 8px}
+.body ul.plain li{padding:8px 0;border-top:2px dashed var(--panel-2)}
+.body ul.plain li:first-child{border-top:0}
+.body .meta{display:block;font-size:14px;color:var(--muted)}
+.body .note{font-size:14px;color:var(--muted);background:var(--panel-2);padding:10px 12px;margin-top:14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px;padding:0;list-style:none}
+.chips li{border:2px solid var(--line);padding:2px 8px;font-size:14px}
+.timeline{list-style:none;margin:0;padding:0 0 0 18px;border-left:4px solid var(--academia)}
+.timeline li{position:relative;padding:4px 0 12px}
+.timeline li::before{content:"";position:absolute;left:-27px;top:9px;width:14px;height:14px;background:var(--panel);border:3px solid var(--academia)}
+.timeline.ind{border-color:var(--industry)}
+.timeline.ind li::before{border-color:var(--industry)}
+.timeline strong{display:block}
+.contacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 4px}
+.contacts a{display:block;text-decoration:none;color:var(--ink);padding:10px 12px}
+.contacts a span{display:block;font-size:13px;color:var(--muted)}
+.contacts a strong{font-family:var(--pixel);font-size:16px}
+
+/* Mini-game */
+.code-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:8px 0 12px}
+.code-card{border:2px solid var(--line);background:var(--panel-2);min-width:0}
+.code-card h4{margin:0;font-family:var(--pixel);font-size:13px;padding:4px 8px;border-bottom:2px solid var(--line);display:flex;align-items:center;gap:6px}
+pre.code{margin:0;padding:8px 0;font-family:var(--code);font-size:12.5px;line-height:1.55;overflow-x:auto}
+pre.code span{display:block;padding:0 10px;white-space:pre}
+pre.code .L{background:var(--tint-l);box-shadow:inset 4px 0 0 var(--academia)}
+pre.code .R{background:var(--tint-r);box-shadow:inset 4px 0 0 var(--industry)}
+pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-weight:700}
+.answers{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
+.answers .btn{text-align:left;font-family:var(--body);font-weight:700;font-size:15px}
+.answers .btn.right{background:var(--ok);color:var(--panel);border-color:var(--ok)}
+.answers .btn.wrong{background:var(--bad);color:var(--panel);border-color:var(--bad)}
+.verdict{font-family:var(--pixel);font-size:18px;margin:12px 0 6px}
+.verdict.good{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.round-tag{font-family:var(--pixel);font-size:14px;color:var(--muted)}
+
+/* Center cards */
+.scrim{position:fixed;inset:0;background:var(--scrim);display:grid;place-items:center;padding:16px;z-index:20}
+.scrim[hidden]{display:none}
+.card{width:min(560px,100%);padding:26px 26px 22px;max-height:100%;overflow:auto}
+.card h1{font-family:var(--pixel);font-size:clamp(34px,7vw,52px);line-height:1;margin:0 0 10px}
+.card .role{font-size:17px;margin:0 0 16px;color:var(--muted)}
+.card p{margin:0 0 12px;max-width:52ch}
+.legend{display:flex;flex-direction:column;gap:4px;margin:4px 0 16px;font-size:14px}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend i{display:inline-block;width:22px;height:6px;flex-shrink:0}
+.controls{font-size:14px;color:var(--muted);margin-bottom:16px}
+
+/* Places list */
+.places{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.places button{width:100%;text-align:left;display:flex;align-items:center;gap:10px;font-family:var(--body);font-weight:400;font-size:15px}
+.places .e{font-size:22px}
+.places b{font-family:var(--pixel);display:block;font-size:16px}
+.places small{color:var(--muted)}
+.places .done{margin-left:auto;color:var(--ok);font-family:var(--pixel)}
+
+/* Classic view */
+.classic{position:fixed;inset:0;z-index:15;background:var(--panel);overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 20px) 18px calc(env(safe-area-inset-bottom,0px) + 40px)}
+.classic[hidden]{display:none}
+.classic-inner{max-width:720px;margin:0 auto}
+.classic-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;position:sticky;top:0}
+.classic h1{font-family:var(--pixel);font-size:34px;margin:0;line-height:1.1}
+.classic section{padding:18px 0;border-top:3px solid var(--line)}
+.classic section h2{font-family:var(--pixel);font-size:22px;margin:0 0 10px;display:flex;align-items:center;gap:10px}
+.classic .body{padding:0}
+
+@media (max-width: 760px){
+  .gitlog{display:none}
+  .who h1{font-size:17px}
+  .who p{font-size:12px}
+  .hud .btn.small{font-size:12px;padding:4px 7px}
+  .progress{font-size:13px;padding:4px 8px}
+  .dialog{max-height:78vh}
+  .dialog .body{padding:12px 14px 16px}
+}
+@media (max-width: 520px){
+  .hud{left:8px;right:8px;gap:6px}
+  .who{padding:6px 9px}
+  .who h1{font-size:15px}
+  .who p{display:none}
+  .hud-actions{gap:6px}
+  .progress .pips{display:none}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<canvas id="world" tabindex="0" role="img" aria-label="A small pixel village laid out like a git history. Use the Places button or the classic view to reach every section with a keyboard or screen reader."></canvas>
+
+<div class="hud">
+  <div class="who box">
+    <h1 id="whoName"></h1>
+    <p id="whoRole"></p>
+  </div>
+  <div class="hud-actions">
+    <div class="progress box" id="progress" aria-live="polite"><span id="progressText">0 of 8 visited</span><span class="pips" id="pips" aria-hidden="true"></span></div>
+    <button class="btn small" id="placesBtn" type="button">Places</button>
+    <button class="btn small" id="classicBtn" type="button">List view</button>
+    <a class="btn small" id="siteLink" href="#">Website</a>
+  </div>
+</div>
+
+<aside class="gitlog box" aria-label="Your visit history">
+  <h2>git log</h2>
+  <ol id="log"></ol>
+</aside>
+
+<div class="hint box" id="hint"></div>
+<button class="btn prompt" id="prompt" type="button" hidden></button>
+
+<section class="dialog box" id="panel" role="dialog" aria-modal="false" aria-labelledby="panelTitle" hidden>
+  <header>
+    <span class="emoji" id="panelEmoji" aria-hidden="true"></span>
+    <div>
+      <h2 id="panelTitle"></h2>
+      <div class="sub"><span class="swatch" id="panelSwatch"></span><span id="panelSub"></span></div>
+    </div>
+    <button class="btn small close" id="panelClose" type="button">Close<kbd>Esc</kbd></button>
+  </header>
+  <div class="body" id="panelBody"></div>
+</section>
+
+<section class="dialog box" id="placesPanel" role="dialog" aria-modal="false" aria-labelledby="placesTitle" hidden>
+  <header>
+    <span class="emoji" aria-hidden="true">🗺️</span>
+    <div>
+      <h2 id="placesTitle">Places</h2>
+      <div class="sub">Jump straight to any building</div>
+    </div>
+    <button class="btn small close" id="placesClose" type="button">Close<kbd>Esc</kbd></button>
+  </header>
+  <div class="body"><ul class="places" id="placesList"></ul></div>
+</section>
+
+<div class="scrim" id="intro">
+  <div class="card box" role="dialog" aria-labelledby="introTitle">
+    <h1 id="introTitle"></h1>
+    <p class="role" id="introRole"></p>
+    <p>My work lives in a small village drawn like a git history. Walk around and step into the buildings.</p>
+    <div class="legend">
+      <span><i style="background:var(--main)"></i>main road: about me, talks, research and contact</span>
+      <span><i style="background:var(--academia)"></i>feature/academia: education and papers</span>
+      <span><i style="background:var(--industry)"></i>feature/industry: experience and projects</span>
+    </div>
+    <p class="controls" id="introControls"></p>
+    <div class="row">
+      <button class="btn primary" id="startBtn" type="button">Start walking</button>
+      <button class="btn" id="introClassic" type="button">List view</button>
+      <a class="btn" id="introSite" href="#">Back to the website</a>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="done" hidden>
+  <div class="card box" role="dialog" aria-labelledby="doneTitle">
+    <h1 id="doneTitle">All branches merged</h1>
+    <p>You’ve been in every building. Thanks for walking around.</p>
+    <p>If you’d like to collaborate, my contacts are at the post office.</p>
+    <div class="row">
+      <button class="btn primary" id="doneContact" type="button">Open contacts</button>
+      <button class="btn" id="doneClose" type="button">Keep exploring</button>
+    </div>
+  </div>
+</div>
+
+<main class="classic" id="classic" hidden>
+  <div class="classic-inner">
+    <div class="classic-top">
+      <h1 id="classicName"></h1>
+      <span class="row" style="margin:0">
+        <a class="btn small" id="classicSite" href="#">Website</a>
+        <button class="btn small" id="classicBack" type="button">Back to the village</button>
+      </span>
+    </div>
+    <div id="classicBody"></div>
+  </div>
+</main>
+
+<script id="site-data" type="application/json">{{ $data | jsonify | safeJS }}</script>
+<script>
+(() => {
+'use strict';
+const T = 32, W = 44, H = 20, SPEED = 150;
+const DATA = JSON.parse(document.getElementById('site-data').textContent);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const ext = (href, text) => `<a href="${esc(href)}" target="_blank" rel="noopener">${text}</a>`;
+// Internal pages open in the same tab; anything else in a new one.
+const lnk = (href, text) => /^(https?:|mailto:)/.test(href) ? ext(href, text) : `<a href="${esc(href)}">${text}</a>`;
+const span = (a, b) => `${esc(a)} to ${b ? esc(b) : 'present'}`;
+
+/* ---------- Content (built from the site folders) ---------- */
+const level = p => p >= 100 ? 'native' : p >= 80 ? 'advanced' : p >= 50 ? 'intermediate' : 'basic';
+const PROFILE_NAMES = { 'brands/github':'GitHub', 'brands/cv':'Lattes CV', 'brands/linkedin':'LinkedIn', 'academicons/orcid':'ORCID' };
+function contactCard(p){
+  if (p.url.startsWith('mailto:')){
+    const where = (p.label.match(/\(([^)]+)\)/) || [])[1];
+    return `<a class="box" href="${esc(p.url)}"><strong>E-mail${where ? ' · ' + esc(where) : ''}</strong><span>${esc(p.url.slice(7))}</span></a>`;
+  }
+  const name = PROFILE_NAMES[p.icon] || p.label || new URL(p.url).hostname;
+  const tail = p.url.replace(/\/+$/, '').split('/').pop();
+  const sub = p.icon === 'brands/cv' ? 'Full academic CV' : p.icon === 'brands/linkedin' ? DATA.name : tail;
+  return `<a class="box" href="${esc(p.url)}" target="_blank" rel="noopener"><strong>${esc(name)}</strong><span>${esc(sub)}</span></a>`;
+}
+const HTML = {
+  home: () => `${DATA.bio}
+    <p class="meta">${esc(DATA.role)}</p>
+    ${DATA.skills.map(g => `<h3>${esc(g.name)}</h3><ul class="chips">${g.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>`).join('')}
+    ${DATA.languages.length ? `<h3>Languages</h3><p>${DATA.languages.map(l => `${esc(l.name)} (${level(l.percent)})`).join(', ')}.</p>` : ''}
+    <p class="note">The village is drawn like a git history. The gold road is main. The pink and blue roads are feature branches that split off and merge back just before the Merge Lab.</p>`,
+  university: () => `<ol class="timeline">${DATA.education.map(e => `
+    <li><strong>${esc(e.area)}</strong>${esc(e.institution)}, ${span(e.start, e.end)}
+      ${e.summary ? `<span class="meta">${esc(e.summary)}</span>` : ''}
+      ${e.button && e.button.url ? `<span class="meta">${lnk(e.button.url, esc(e.button.text || 'Read more'))}</span>` : ''}</li>`).join('')}</ol>`,
+  library: () => `<ul class="plain">${DATA.publications.map(p => `
+    <li>${lnk(p.url, esc(p.title))}<span class="meta">${p.authors.map(esc).join(', ')}. ${p.venue ? esc(p.venue) + ', ' : ''}${esc(p.year)}.</span></li>`).join('')}</ul>
+    <p>${lnk(DATA.links.publications, 'See every publication')}</p>`,
+  stage: () => `<ul class="plain">${DATA.events.map(e => `
+    <li>${lnk(e.url, esc(e.title))}<span class="meta">${esc(e.date)}${e.place ? ' · ' + esc(e.place) : ''}${e.summary ? '. ' + esc(e.summary) : ''}</span></li>`).join('')}</ul>
+    <p>${lnk(DATA.links.events, 'See every event')}</p>`,
+  office: () => `<ol class="timeline ind">${DATA.work.map(w => `
+    <li><strong>${esc(w.position)}</strong>${esc(w.company)}, ${span(w.start, w.end)}${w.summary ? `<span class="meta">${esc(w.summary)}</span>` : ''}</li>`).join('')}</ol>
+    ${DATA.courses.length ? `<h3>Courses taught</h3><ul class="plain">${DATA.courses.map(c => `<li>${lnk(c.url, esc(c.title))}<span class="meta">${esc(c.where)}</span></li>`).join('')}</ul>` : ''}`,
+  workshop: () => `<ul class="plain">${DATA.projects.map(p => `
+    <li>${lnk(p.url, esc(p.title))}<span class="meta">${esc(p.summary)}</span></li>`).join('')}</ul>
+    <p>${lnk(DATA.links.projects, 'See every project')}</p>`,
+  lab: () => `${DATA.research}
+    <h3>Interests</h3><ul class="chips">${DATA.interests.map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+    <h3>Try it yourself</h3><p>Three merges, three possible outcomes. Can you tell which one git gets wrong?</p>
+    <div class="row"><button class="btn primary" type="button" data-action="play">Play: spot the conflict</button></div>`,
+  post: () => `<p class="lead">Please reach out if you’d like to collaborate.</p>
+    <div class="contacts">${DATA.profiles.map(contactCard).join('')}</div>`,
+};
+const PLACES = [
+  { id:'home', name:'Home', title:'About me', emoji:'🏠', branch:'main', rect:[3,7,3,3], roof:'#c95b4a', prompt:'Go inside' },
+  { id:'university', name:'University', title:'Education', emoji:'🎓', branch:'academia', rect:[11,2,3,3], roof:'#8a4fb0', prompt:'Enter the university' },
+  { id:'library', name:'Library', title:'Papers', emoji:'📚', branch:'academia', rect:[19,2,3,3], roof:'#b0476e', prompt:'Enter the library' },
+  { id:'stage', name:'Stage', title:'Events and talks', emoji:'🎤', branch:'main', rect:[15,7,3,3], roof:'#d9922a', prompt:'Visit the stage' },
+  { id:'office', name:'Office', title:'Experience', emoji:'💼', branch:'industry', rect:[14,12,3,3], roof:'#3a6fa8', prompt:'Enter the office' },
+  { id:'workshop', name:'Workshop', title:'Projects', emoji:'🛠️', branch:'industry', rect:[20,12,3,3], roof:'#3f8a83', prompt:'Enter the workshop' },
+  { id:'lab', name:'Merge Lab', title:'Research', emoji:'🔬', branch:'main', rect:[32,7,3,3], roof:'#2f8f62', prompt:'Enter the merge lab' },
+  { id:'post', name:'Post office', title:'Contact', emoji:'📮', branch:'main', rect:[37,7,3,3], roof:'#c23c33', prompt:'Enter the post office' },
+];
+PLACES.forEach(p => { p.html = HTML[p.id](); });
+const ORDER_CLASSIC = ['home','lab','library','university','office','workshop','stage','post'];
+const BRANCH_NAME = { main:'main', academia:'feature/academia', industry:'feature/industry' };
+PLACES.forEach(p => {
+  const [x,y,w,h] = p.rect;
+  p.door = [x + Math.floor(w/2), y + h - 1];
+  p.stand = [p.door[0], y + h];
+  p.junction = [p.door[0], y + h + 1];
+});
+const byId = Object.fromEntries(PLACES.map(p => [p.id, p]));
+
+/* ---------- Mini-game ---------- */
+const ROUNDS = [
+  { base:['class Config {','  int timeout = 30;','}'],
+    left:['class Config {',['L','  int timeout = 60;'],'}'],
+    right:['class Config {',['R','  int timeout = 10;'],'}'],
+    merged:['class Config {',['C','<<<<<<< left'],['L','  int timeout = 60;'],['C','======='],['R','  int timeout = 10;'],['C','>>>>>>> right'],'}'],
+    answer:'textual',
+    explain:'Both branches changed the same line, so git stops and asks someone to choose. Annoying, but at least it’s visible.' },
+  { base:['String greet(String n) {','  return "Hi " + n;','}','','int count(List<Item> xs) {','  return xs.size();','}'],
+    left:['String greet(String n) {',['L','  return "Hello, " + n;'],'}','','int count(List<Item> xs) {','  return xs.size();','}'],
+    right:['String greet(String n) {','  return "Hi " + n;','}','','int count(List<Item> xs) {',['R','  return xs == null ? 0 : xs.size();'],'}'],
+    merged:['String greet(String n) {',['L','  return "Hello, " + n;'],'}','','int count(List<Item> xs) {',['R','  return xs == null ? 0 : xs.size();'],'}'],
+    answer:'clean',
+    explain:'The edits touch different methods that share no state. Git merges them and the program does what both developers expect.' },
+  { base:['void checkout(Cart c) {','  total = c.sum();','  validate(c);','  log(c);','  print(total);','}'],
+    left:['void checkout(Cart c) {','  total = c.sum();',['L','  total = applyDiscount(total);'],'  validate(c);','  log(c);','  print(total);','}'],
+    right:['void checkout(Cart c) {','  total = c.sum();','  validate(c);','  log(c);',['R','  total = c.sum() + shipping;'],'  print(total);','}'],
+    merged:['void checkout(Cart c) {','  total = c.sum();',['L','  total = applyDiscount(total);'],'  validate(c);','  log(c);',['R','  total = c.sum() + shipping;'],'  print(total);','}'],
+    answer:'semantic',
+    explain:'Git merges this without a warning, but the right branch’s assignment overwrites the left branch’s discount, so customers never get it. This is an overriding assignment interference, the kind of conflict my research detects with static analysis.' },
+];
+const OPTIONS = [
+  ['clean','Clean merge: works as both developers intended'],
+  ['textual','Textual conflict: git stops and asks for help'],
+  ['semantic','Semantic conflict: git merges it, but the behavior breaks'],
+];
+const codeBlock = lines => `<pre class="code">${lines.map(l => Array.isArray(l) ? `<span class="${l[0]}">${esc(l[1]) || ' '}</span>` : `<span>${esc(l) || ' '}</span>`).join('')}</pre>`;
+let game = null;
+function renderGame(){
+  const body = document.getElementById('panelBody');
+  if (game.round >= ROUNDS.length){
+    body.innerHTML = `<p class="verdict ${game.score===3?'good':''}">You got ${game.score} of 3</p>
+      <p>Semantic conflicts are the ones git can’t see: the merge looks fine, the tests might even pass, and the behavior is still wrong. My PhD is about merge tools that catch them before they reach production.</p>
+      <div class="row"><button class="btn primary" type="button" data-action="play">Play again</button><button class="btn" type="button" data-action="lab">Back to the lab</button></div>`;
+    body.scrollTop = 0; return;
+  }
+  const r = ROUNDS[game.round];
+  const sw = c => `<span class="swatch" style="background:var(${c})"></span>`;
+  let html = `<p class="round-tag">Merge ${game.round+1} of 3</p>
+    <div class="code-grid">
+      <div class="code-card"><h4>Base</h4>${codeBlock(r.base)}</div>
+      <div class="code-card"><h4>${sw('--academia')}Left branch</h4>${codeBlock(r.left)}</div>
+      <div class="code-card"><h4>${sw('--industry')}Right branch</h4>${codeBlock(r.right)}</div>
+    </div>
+    <p><strong>What happens when these two branches merge?</strong></p>
+    <div class="answers">${OPTIONS.map(([k,t]) => {
+      let cls = '';
+      if (game.picked){ if (k===r.answer) cls=' right'; else if (k===game.picked) cls=' wrong'; }
+      return `<button class="btn${cls}" type="button" data-pick="${k}" ${game.picked?'disabled':''}>${t}</button>`;
+    }).join('')}</div>`;
+  if (game.picked){
+    const ok = game.picked === r.answer;
+    html += `<p class="verdict ${ok?'good':'bad'}">${ok?'Correct':'Not quite'}</p>
+      <p>${r.explain}</p>
+      <div class="code-card"><h4>What git produces</h4>${codeBlock(r.merged)}</div>
+      <div class="row"><button class="btn primary" type="button" data-action="next">${game.round===ROUNDS.length-1?'See my score':'Next merge'}</button></div>`;
+  }
+  body.innerHTML = html;
+  if (!game.picked) body.scrollTop = 0;
+}
+
+/* ---------- World grid ---------- */
+const GRASS=0, PATH=1, WATER=2, TREE=3, FLOWER=4, BUILD=5;
+const G = new Uint8Array(W*H);
+const I = (x,y) => y*W + x;
+const inMap = (x,y) => x>=0 && y>=0 && x<W && y<H;
+const PATHS = [
+  { b:'academia', pts:[[8,11],[8,6],[30,6],[30,11]] },
+  { b:'industry', pts:[[11,11],[11,16],[26,16],[26,11]] },
+  { b:'main', pts:[[2,11],[41,11]] },
+];
+function walk(pts, fn){
+  for (let i=0;i<pts.length-1;i++){
+    let [x,y] = pts[i]; const [x1,y1] = pts[i+1];
+    const sx = Math.sign(x1-x), sy = Math.sign(y1-y);
+    fn(x,y);
+    while (x!==x1 || y!==y1){ x+=sx; y+=sy; fn(x,y); }
+  }
+}
+PATHS.forEach(p => walk(p.pts, (x,y) => G[I(x,y)] = PATH));
+for (let y=14;y<=17;y++) for (let x=30;x<=34;x++) G[I(x,y)] = WATER;
+PLACES.forEach(p => {
+  const [x,y,w,h] = p.rect;
+  for (let yy=y;yy<y+h;yy++) for (let xx=x;xx<x+w;xx++) G[I(xx,yy)] = BUILD;
+  G[I(p.stand[0],p.stand[1])] = PATH;
+});
+let seed = 20260;
+const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+  if (G[I(x,y)] !== GRASS) continue;
+  if (x===0 || y===0 || x===W-1 || y===H-1){ G[I(x,y)] = TREE; continue; }
+  let near = false;
+  for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++){
+    const nx=x+dx, ny=y+dy; if (!inMap(nx,ny)) continue;
+    const g = G[I(nx,ny)]; if (g===PATH || g===BUILD || g===WATER) near = true;
+  }
+  const r = rnd();
+  if (!near && r < .3) G[I(x,y)] = TREE;
+  else if (r > .9) G[I(x,y)] = FLOWER;
+}
+const blocked = (tx,ty) => !inMap(tx,ty) || [WATER,TREE,BUILD].includes(G[I(tx,ty)]);
+
+/* ---------- Palettes ---------- */
+const DAY = { grass:'#86b86a', grass2:'#7daf62', tuft:'#6a9b50', path:'#ead3a2', pathEdge:'#c9aa74', water:'#5aa9d6', waterHi:'#a3d5f0', tree:'#3d7d4f', treeHi:'#5d9e62', trunk:'#6b4a2f', wall:'#f3ead9', wallShade:'#dccfb6', door:'#4a3426', win:'#9ad0ec', glow:null, shadow:'rgba(20,35,20,.22)', plate:'#fbf8f0', plateInk:'#1f1d36', outline:'#1f1d36', roofDark:0 };
+const NIGHT = { grass:'#2f4d40', grass2:'#2b473b', tuft:'#243f33', path:'#6f6488', pathEdge:'#574d70', water:'#22436a', waterHi:'#3f6d9c', tree:'#1e3e31', treeHi:'#2b5444', trunk:'#3d2c22', wall:'#a9a2c4', wallShade:'#8b84aa', door:'#241a16', win:'#ffd56b', glow:'rgba(255,213,107,.32)', shadow:'rgba(0,0,0,.35)', plate:'#2f2b50', plateInk:'#efecff', outline:'#0b0a17', roofDark:.3 };
+let pal = DAY, isDark = false, BC = {};
+function readTheme(){
+  const attr = document.documentElement.getAttribute('data-theme');
+  isDark = attr === 'dark' || (attr !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  pal = isDark ? NIGHT : DAY;
+  const cs = getComputedStyle(document.documentElement);
+  BC = { main:cs.getPropertyValue('--main').trim(), academia:cs.getPropertyValue('--academia').trim(), industry:cs.getPropertyValue('--industry').trim() };
+}
+function shade(hex, amt){
+  const n = parseInt(hex.slice(1),16); let r=n>>16, g=n>>8&255, b=n&255;
+  r=Math.round(r*(1-amt)); g=Math.round(g*(1-amt)); b=Math.round(b*(1-amt));
+  return '#' + ((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1);
+}
+
+/* ---------- Canvas setup ---------- */
+const cvs = document.getElementById('world'), ctx = cvs.getContext('2d');
+let off = null, R = 1, zoom = 1, dpr = 1, vw = 0, vh = 0;
+const cam = { x:0, y:0 };
+function resize(){
+  vw = innerWidth; vh = innerHeight;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  zoom = Math.max(.8, Math.min(2, Math.min(vw/(13*T), vh/(9*T))));
+  // On tall phone screens, zoom in until the village fills the height.
+  zoom = Math.min(2, Math.max(zoom, vh/(H*T)));
+  R = Math.min(zoom*dpr, 3.2);
+  cvs.width = Math.round(vw*dpr); cvs.height = Math.round(vh*dpr);
+  buildWorld();
+}
+function buildWorld(){
+  readTheme();
+  off = document.createElement('canvas');
+  off.width = Math.ceil(W*T*R); off.height = Math.ceil(H*T*R);
+  const o = off.getContext('2d');
+  o.scale(R,R); o.imageSmoothingEnabled = false;
+  // grass
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+    const h = (x*73856093 ^ y*19349663) >>> 0;
+    o.fillStyle = (h % 3 === 0) ? pal.grass2 : pal.grass;
+    o.fillRect(x*T, y*T, T, T);
+    if (h % 5 === 0){ o.fillStyle = pal.tuft; o.fillRect(x*T + (h%20), y*T + (h>>5)%22 + 4, 3, 2); o.fillRect(x*T + (h%20) + 4, y*T + (h>>5)%22 + 2, 2, 3); }
+  }
+  // paths and water
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+    const g = G[I(x,y)];
+    if (g === PATH){
+      o.fillStyle = pal.path; o.fillRect(x*T, y*T, T, T);
+      o.fillStyle = pal.pathEdge;
+      if (!inMap(x,y-1) || G[I(x,y-1)]!==PATH) o.fillRect(x*T, y*T, T, 2);
+      if (!inMap(x,y+1) || G[I(x,y+1)]!==PATH) o.fillRect(x*T, y*T+T-2, T, 2);
+      if (!inMap(x-1,y) || G[I(x-1,y)]!==PATH) o.fillRect(x*T, y*T, 2, T);
+      if (!inMap(x+1,y) || G[I(x+1,y)]!==PATH) o.fillRect(x*T+T-2, y*T, 2, T);
+    } else if (g === WATER){
+      o.fillStyle = pal.water; o.fillRect(x*T, y*T, T, T);
+      o.fillStyle = pal.waterHi;
+      if ((x+y)%2===0){ o.fillRect(x*T+6, y*T+10, 10, 2); o.fillRect(x*T+16, y*T+22, 8, 2); }
+    } else if (g === FLOWER){
+      const cols = ['#f4d35e','#ee6c8a','#f7f7f2'];
+      const c = cols[(x+y)%3];
+      o.fillStyle = c; o.fillRect(x*T+9, y*T+12, 4, 4); o.fillRect(x*T+20, y*T+20, 4, 4);
+      o.fillStyle = '#2f6b3a'; o.fillRect(x*T+10, y*T+16, 2, 3); o.fillRect(x*T+21, y*T+24, 2, 3);
+    }
+  }
+  // pond rim
+  o.strokeStyle = pal.waterHi; o.lineWidth = 2; o.strokeRect(30*T+1, 14*T+1, 5*T-2, 4*T-2);
+  // branch lines along roads
+  o.lineCap = 'square'; o.lineJoin = 'miter';
+  const line = (pts, col) => { o.strokeStyle = col; o.lineWidth = 4; o.beginPath(); pts.forEach(([x,y],i) => { const px=x*T+16, py=y*T+16; i ? o.lineTo(px,py) : o.moveTo(px,py); }); o.stroke(); };
+  PATHS.forEach(p => line(p.pts, BC[p.b]));
+  PLACES.forEach(p => line([p.junction, p.stand], BC[p.branch]));
+  // fork and merge nodes
+  [[8,11,'academia'],[30,11,'academia'],[11,11,'industry'],[26,11,'industry']].forEach(([x,y,b]) => {
+    o.fillStyle = BC[b]; o.strokeStyle = pal.outline; o.lineWidth = 3;
+    o.fillRect(x*T+7, y*T+7, 18, 18); o.strokeRect(x*T+7, y*T+7, 18, 18);
+  });
+  // trees
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++) if (G[I(x,y)]===TREE){
+    const cx = x*T+16, cy = y*T+16;
+    o.fillStyle = pal.shadow; o.beginPath(); o.ellipse(cx, cy+12, 12, 4, 0, 0, Math.PI*2); o.fill();
+    o.fillStyle = pal.trunk; o.fillRect(cx-3, cy+2, 6, 10);
+    o.fillStyle = pal.tree; o.beginPath(); o.arc(cx, cy-2, 13, 0, Math.PI*2); o.fill();
+    o.fillStyle = pal.treeHi; o.beginPath(); o.arc(cx-4, cy-7, 6, 0, Math.PI*2); o.fill();
+  }
+  // labels (after the trees so they are never hidden)
+  o.font = '700 12px "Pixelify Sans", monospace'; o.textAlign = 'center'; o.textBaseline = 'middle';
+  const label = (txt, x, y, col) => { o.lineJoin = 'round'; o.lineWidth = 4; o.strokeStyle = pal.outline; o.strokeText(txt, x, y); o.fillStyle = col; o.fillText(txt, x, y); };
+  label('main', 5.4*T, 12.55*T, BC.main);
+  label('feature/academia', 26*T, 5.5*T, BC.academia);
+  label('feature/industry', 18*T, 17.6*T, BC.industry);
+  // At each fork, say what the branch holds instead of just "branch".
+  label('academia', 8.5*T, 12.55*T, BC.academia);
+  label('merge', 30.5*T, 12.55*T, '#ffffff');
+  label('industry', 11.5*T, 9.9*T, BC.industry);
+  label('merge', 26.5*T, 10.45*T, '#ffffff');
+  o.font = '500 10px "Pixelify Sans", monospace';
+  label('education & papers', 8.5*T, 13.1*T, '#ffffff');
+  label('experience & projects', 11.5*T, 10.45*T, '#ffffff');
+  // buildings
+  PLACES.forEach(p => drawBuilding(o, p));
+}
+function drawBuilding(o, p){
+  const [x,y,w,h] = p.rect, X=x*T, Y=y*T, Wp=w*T, Hp=h*T;
+  const roof = shade(p.roof, pal.roofDark);
+  o.fillStyle = pal.shadow; o.fillRect(X+6, Y+10, Wp, Hp-4);
+  // walls
+  const wallY = Y + Hp*0.42;
+  o.fillStyle = pal.wall; o.fillRect(X+3, wallY, Wp-6, Hp - (wallY-Y));
+  o.fillStyle = pal.wallShade; o.fillRect(X+3, Y+Hp-4, Wp-6, 4);
+  o.strokeStyle = pal.outline; o.lineWidth = 2; o.strokeRect(X+3, wallY, Wp-6, Hp-(wallY-Y));
+  // roof
+  o.fillStyle = roof;
+  o.beginPath(); o.moveTo(X-2, wallY+4); o.lineTo(X+8, Y+4); o.lineTo(X+Wp-8, Y+4); o.lineTo(X+Wp+2, wallY+4); o.closePath(); o.fill();
+  o.strokeStyle = pal.outline; o.stroke();
+  o.strokeStyle = shade(roof, .22); o.lineWidth = 2;
+  for (let ry = Y+14; ry < wallY; ry += 9){ o.beginPath(); o.moveTo(X+6, ry); o.lineTo(X+Wp-6, ry); o.stroke(); }
+  // windows
+  const winY = wallY + 10;
+  [[X+10, winY],[X+Wp-24, winY]].forEach(([wx,wy]) => {
+    if (pal.glow){ o.fillStyle = pal.glow; o.fillRect(wx-5, wy-5, 24, 24); }
+    o.fillStyle = pal.win; o.fillRect(wx, wy, 14, 12);
+    o.strokeStyle = pal.outline; o.lineWidth = 2; o.strokeRect(wx, wy, 14, 12);
+    o.beginPath(); o.moveTo(wx+7, wy); o.lineTo(wx+7, wy+12); o.stroke();
+  });
+  // door
+  const dx = p.door[0]*T + 9, dy = Y + Hp - 22;
+  o.fillStyle = pal.door; o.fillRect(dx, dy, 14, 22);
+  o.fillStyle = '#e8b04a'; o.fillRect(dx+10, dy+11, 2, 2);
+  // emoji sign on the roof
+  o.font = '18px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+  o.textAlign = 'center'; o.textBaseline = 'middle';
+  o.fillText(p.emoji, X + Wp/2, Y + (wallY-Y)/2 + 3);
+  // name plate
+  o.font = '700 12px "Pixelify Sans", monospace';
+  const tw = o.measureText(p.name).width + 12;
+  const px = X + Wp/2 - tw/2, py = Y - 16;
+  o.fillStyle = pal.plate; o.fillRect(px, py, tw, 16);
+  o.strokeStyle = pal.outline; o.lineWidth = 2; o.strokeRect(px, py, tw, 16);
+  o.fillStyle = pal.plateInk; o.fillText(p.name, X + Wp/2, py + 8.5);
+}
+
+/* ---------- Player ---------- */
+const center = (tx,ty) => [tx*T + 16, ty*T + 22];
+const player = { x:0, y:0, dir:'down', moving:false, anim:0 };
+[player.x, player.y] = center(4, 11);
+function canStand(x,y){
+  const pts = [[x-6,y-8],[x+6,y-8],[x-6,y-1],[x+6,y-1]];
+  return pts.every(([px,py]) => !blocked(Math.floor(px/T), Math.floor(py/T)));
+}
+function drawPlayer(c){
+  const x = Math.round(player.x), y = Math.round(player.y);
+  const step = player.moving ? (Math.floor(player.anim*8) % 2) : -1;
+  const bob = player.moving && step===0 ? -1 : 0;
+  c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x, y, 8, 3, 0, 0, Math.PI*2); c.fill();
+  // legs
+  c.fillStyle = '#2b2a45';
+  c.fillRect(x-5, y-8 - (step===0?2:0), 4, 8 - (step===0?1:0));
+  c.fillRect(x+1, y-8 - (step===1?2:0), 4, 8 - (step===1?1:0));
+  // body
+  c.fillStyle = BC.main; c.fillRect(x-7, y-17+bob, 14, 10);
+  c.fillStyle = '#1f1d36'; c.fillRect(x-7, y-9+bob, 14, 2);
+  // arms
+  c.fillStyle = '#b97c4e';
+  if (player.dir==='left' || player.dir==='right'){ c.fillRect(x-2, y-15+bob, 4, 7); }
+  else { c.fillRect(x-9, y-16+bob, 2, 7); c.fillRect(x+7, y-16+bob, 2, 7); }
+  // head
+  c.fillStyle = '#c98a5c'; c.fillRect(x-6, y-28+bob, 12, 11);
+  c.fillStyle = '#2b1d14';
+  c.fillRect(x-7, y-30+bob, 14, 5);
+  if (player.dir==='up') c.fillRect(x-7, y-30+bob, 14, 11);
+  if (player.dir==='left') c.fillRect(x+3, y-30+bob, 4, 9);
+  if (player.dir==='right') c.fillRect(x-7, y-30+bob, 4, 9);
+  // eyes
+  c.fillStyle = '#1f1d36';
+  if (player.dir==='down'){ c.fillRect(x-4, y-22+bob, 2, 3); c.fillRect(x+2, y-22+bob, 2, 3); }
+  if (player.dir==='left') c.fillRect(x-4, y-22+bob, 2, 3);
+  if (player.dir==='right') c.fillRect(x+2, y-22+bob, 2, 3);
+}
+
+/* ---------- State ---------- */
+let visited = new Set();
+let log = [{ h:'a3f1c09', m:'init: arrive in the village' }];
+try {
+  const saved = JSON.parse(localStorage.getItem('mergeVillage') || 'null');
+  if (saved && Array.isArray(saved.v)) { visited = new Set(saved.v.filter(id => byId[id])); if (Array.isArray(saved.log)) log = saved.log.slice(0,12); }
+} catch (e) {}
+const save = () => { try { localStorage.setItem('mergeVillage', JSON.stringify({ v:[...visited], log })); } catch (e) {} };
+let celebrated = visited.size === PLACES.length;
+let paused = true, route = null, autoEnter = null, near = null, current = null, tapMark = null, moved = false;
+const keys = {};
+const coarse = matchMedia('(pointer: coarse)').matches;
+
+/* ---------- HUD ---------- */
+const $ = id => document.getElementById(id);
+function renderHUD(fresh){
+  $('progressText').textContent = `${visited.size} of ${PLACES.length} visited`;
+  $('pips').innerHTML = PLACES.map(p => `<span class="pip${visited.has(p.id)?' on':''}"></span>`).join('');
+  $('log').innerHTML = log.slice(0,5).map((e,i) => `<li class="${fresh && i===0 ? 'fresh':''}"><span class="h">${e.h}</span><span>${esc(e.m)}</span></li>`).join('');
+  if (fresh){ const pr = $('progress'); pr.classList.remove('pulse'); void pr.offsetWidth; pr.classList.add('pulse'); }
+}
+$('hint').innerHTML = coarse ? 'Tap anywhere to walk. Tap a building to go in.' : 'Walk with the arrow keys or WASD. Press <kbd>E</kbd> at a door.';
+$('introControls').innerHTML = coarse ? 'Tap anywhere to walk, and tap a building to go in.' : 'Arrow keys or WASD to walk, E to enter. You can also click anywhere to walk there.';
+
+/* ---------- Panels ---------- */
+let lastFocus = null;
+function openPlace(p){
+  closePlaces();
+  paused = true; route = null; autoEnter = null; Object.keys(keys).forEach(k => keys[k] = false);
+  current = p; game = null;
+  $('panelEmoji').textContent = p.emoji;
+  $('panelTitle').textContent = p.name;
+  $('panelSub').textContent = `${p.title} on ${BRANCH_NAME[p.branch]}`;
+  $('panelSwatch').style.background = `var(--${p.branch})`;
+  $('panelBody').innerHTML = p.html;
+  $('panelBody').scrollTop = 0;
+  $('panel').hidden = false; $('prompt').hidden = true;
+  if (!visited.has(p.id)){
+    visited.add(p.id);
+    const h = Array.from({length:7}, () => '0123456789abcdef'[Math.floor(Math.random()*16)]).join('');
+    log.unshift({ h, m:`explore: ${p.name.toLowerCase()}` });
+    save(); renderHUD(true);
+  }
+  $('panelClose').focus();
+}
+function closePanel(){
+  if ($('panel').hidden) return;
+  $('panel').hidden = true; current = null; game = null; paused = false;
+  cvs.focus({ preventScroll:true });
+  if (!celebrated && visited.size === PLACES.length){ celebrated = true; celebrate(); }
+}
+function openPlaces(){
+  closePanel(); paused = true;
+  $('placesList').innerHTML = PLACES.map(p => `<li><button class="btn" type="button" data-go="${p.id}"><span class="e" aria-hidden="true">${p.emoji}</span><span><b>${p.name}</b><small>${p.title}</small></span>${visited.has(p.id)?'<span class="done" aria-label="visited">✓</span>':''}</button></li>`).join('');
+  $('placesPanel').hidden = false;
+  $('placesList').querySelector('button').focus();
+}
+function closePlaces(){ if ($('placesPanel').hidden) return; $('placesPanel').hidden = true; paused = false; cvs.focus({ preventScroll:true }); }
+function teleport(p){ [player.x, player.y] = center(p.stand[0], p.stand[1]); player.dir = 'up'; openPlace(p); }
+
+$('panelClose').onclick = closePanel;
+$('placesClose').onclick = closePlaces;
+$('placesBtn').onclick = openPlaces;
+$('placesList').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) teleport(byId[b.dataset.go]); });
+$('prompt').onclick = () => { if (near) openPlace(near); };
+
+function handleAction(e){
+  const a = e.target.closest('[data-action]'), pk = e.target.closest('[data-pick]');
+  if (a){
+    const act = a.dataset.action;
+    if (act === 'play'){
+      if (!$('classic').hidden) closeClassic();
+      if (!current || current.id !== 'lab') teleport(byId.lab);
+      game = { round:0, score:0, picked:null }; renderGame();
+      $('panelBody').querySelector('[data-pick]')?.focus();
+    } else if (act === 'next'){ game.round++; game.picked = null; renderGame(); $('panelBody').querySelector('button')?.focus(); }
+    else if (act === 'lab'){ game = null; $('panelBody').innerHTML = byId.lab.html; $('panelBody').scrollTop = 0; }
+  } else if (pk && game && !game.picked){
+    game.picked = pk.dataset.pick;
+    if (game.picked === ROUNDS[game.round].answer) game.score++;
+    renderGame();
+    $('panelBody').querySelector('[data-action="next"]')?.focus();
+  }
+}
+$('panelBody').addEventListener('click', handleAction);
+$('classicBody').addEventListener('click', handleAction);
+
+/* Classic view */
+$('classicBody').innerHTML = ORDER_CLASSIC.map(id => { const p = byId[id]; return `<section><h2><span aria-hidden="true">${p.emoji}</span>${p.title}</h2><div class="body">${p.html}</div></section>`; }).join('');
+function openClassic(){ $('intro').hidden = true; closePanel(); closePlaces(); paused = true; $('classic').hidden = false; $('classicBack').focus(); }
+function closeClassic(){ $('classic').hidden = true; paused = $('intro').hidden ? false : true; cvs.focus({ preventScroll:true }); }
+$('classicBtn').onclick = openClassic;
+$('introClassic').onclick = openClassic;
+$('classicBack').onclick = closeClassic;
+
+/* Intro and finale */
+$('startBtn').onclick = () => { $('intro').hidden = true; paused = false; cvs.focus({ preventScroll:true }); };
+$('doneClose').onclick = () => { $('done').hidden = true; paused = false; cvs.focus({ preventScroll:true }); };
+$('doneContact').onclick = () => { $('done').hidden = true; teleport(byId.post); };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let confetti = [];
+function celebrate(){
+  paused = true; $('done').hidden = false; $('doneContact').focus();
+  if (reduced) return;
+  const cols = [BC.main, BC.academia, BC.industry, '#ffffff'];
+  for (let i=0;i<140;i++) confetti.push({ x:Math.random()*vw, y:-20 - Math.random()*vh*.6, vx:(Math.random()-.5)*60, vy:80 + Math.random()*140, s:4 + Math.floor(Math.random()*3)*2, c:cols[i%4], life:4 });
+}
+
+/* ---------- Input ---------- */
+const KEYMAP = { ArrowLeft:'left', a:'left', A:'left', ArrowRight:'right', d:'right', D:'right', ArrowUp:'up', w:'up', W:'up', ArrowDown:'down', s:'down', S:'down' };
+addEventListener('keydown', e => {
+  if (e.key === 'Escape'){
+    if (!$('panel').hidden) closePanel();
+    else if (!$('placesPanel').hidden) closePlaces();
+    else if (!$('classic').hidden) closeClassic();
+    else if (!$('done').hidden) $('doneClose').click();
+    return;
+  }
+  if (paused) return;
+  const onControl = e.target.closest && e.target.closest('button, a, input');
+  if (KEYMAP[e.key] && !onControl){ keys[KEYMAP[e.key]] = true; e.preventDefault(); }
+  else if ((e.key === 'e' || e.key === 'E' || ((e.key === 'Enter' || e.key === ' ') && !onControl)) && near){ e.preventDefault(); openPlace(near); }
+});
+addEventListener('keyup', e => { if (KEYMAP[e.key]) keys[KEYMAP[e.key]] = false; });
+addEventListener('blur', () => Object.keys(keys).forEach(k => keys[k] = false));
+
+function bfs(sx,sy,tx,ty){
+  if (sx===tx && sy===ty) return [];
+  const prev = new Int32Array(W*H).fill(-1), q = [I(sx,sy)]; prev[I(sx,sy)] = I(sx,sy);
+  while (q.length){
+    const cur = q.shift(), cx = cur % W, cy = (cur / W) | 0;
+    if (cx===tx && cy===ty) break;
+    for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=cx+dx, ny=cy+dy;
+      if (blocked(nx,ny) || prev[I(nx,ny)] !== -1) continue;
+      prev[I(nx,ny)] = cur; q.push(I(nx,ny));
+    }
+  }
+  if (prev[I(tx,ty)] === -1) return null;
+  const path = []; let c = I(tx,ty);
+  while (c !== I(sx,sy)){ path.push(center(c % W, (c / W) | 0)); c = prev[c]; }
+  return path.reverse();
+}
+cvs.addEventListener('pointerdown', e => {
+  if (paused) return;
+  const wx = e.clientX / zoom + cam.x, wy = e.clientY / zoom + cam.y;
+  let tx = Math.floor(wx / T), ty = Math.floor(wy / T);
+  const ptx = Math.floor(player.x / T), pty = Math.floor((player.y - 4) / T);
+  let target = null;
+  const hit = PLACES.find(p => { const [x,y,w,h] = p.rect; return tx>=x && tx<x+w && ty>=y-1 && ty<y+h; });
+  if (hit){ target = hit.stand; autoEnter = hit; }
+  else {
+    autoEnter = null;
+    if (!blocked(tx,ty)) target = [tx,ty];
+    else {
+      let best = null, bd = 1e9;
+      for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++){ const nx=tx+dx, ny=ty+dy; if (!blocked(nx,ny)){ const d = Math.hypot(nx*T+16-wx, ny*T+16-wy); if (d < bd){ bd = d; best = [nx,ny]; } } }
+      target = best;
+    }
+  }
+  if (!target) return;
+  const path = bfs(ptx, pty, target[0], target[1]);
+  if (!path) return;
+  route = path;
+  tapMark = { x:target[0]*T+16, y:target[1]*T+20, t:0 };
+  if (!route.length){ route = null; if (autoEnter){ const p = autoEnter; autoEnter = null; openPlace(p); } }
+});
+
+/* ---------- Loop ---------- */
+function setDir(vx,vy){ if (Math.abs(vx) > Math.abs(vy)) player.dir = vx>0 ? 'right':'left'; else if (vy) player.dir = vy>0 ? 'down':'up'; }
+function update(dt){
+  if (paused){ player.moving = false; return; }
+  let dx = (keys.right?1:0) - (keys.left?1:0), dy = (keys.down?1:0) - (keys.up?1:0);
+  if (dx || dy){
+    route = null; autoEnter = null; tapMark = null;
+    const l = Math.hypot(dx,dy), sx = dx/l*SPEED*dt, sy = dy/l*SPEED*dt;
+    if (canStand(player.x+sx, player.y)) player.x += sx;
+    if (canStand(player.x, player.y+sy)) player.y += sy;
+    setDir(dx,dy); player.moving = true;
+  } else if (route && route.length){
+    const [tx,ty] = route[0], vx = tx-player.x, vy = ty-player.y, d = Math.hypot(vx,vy), st = SPEED*dt;
+    if (d <= st){ player.x = tx; player.y = ty; route.shift(); }
+    else { player.x += vx/d*st; player.y += vy/d*st; }
+    setDir(vx,vy); player.moving = true;
+    if (!route.length){ route = null; tapMark = null; if (autoEnter){ const p = autoEnter; autoEnter = null; openPlace(p); return; } }
+  } else player.moving = false;
+  if (player.moving){ player.anim += dt; if (!moved){ moved = true; $('hint').classList.add('gone'); } }
+  // nearest door
+  near = null; let bd = 34;
+  PLACES.forEach(p => { const [sx,sy] = center(p.stand[0], p.stand[1]); const d = Math.hypot(player.x-sx, player.y-sy); if (d < bd){ bd = d; near = p; } });
+  const pr = $('prompt');
+  if (near && !paused){
+    const label = `${near.emoji} ${near.prompt}`;
+    if (pr.dataset.for !== near.id){ pr.innerHTML = esc(label) + (coarse ? '' : '<kbd>E</kbd>'); pr.dataset.for = near.id; }
+    pr.hidden = false;
+  } else { pr.hidden = true; pr.dataset.for = ''; }
+}
+let t0 = performance.now(), clock = 0;
+function frame(now){
+  const dt = Math.min(.05, (now - t0)/1000); t0 = now; clock += dt;
+  update(dt);
+  const viewW = vw/zoom, viewH = vh/zoom, worldW = W*T, worldH = H*T;
+  cam.x = viewW >= worldW ? (worldW-viewW)/2 : Math.max(0, Math.min(worldW-viewW, player.x - viewW/2));
+  cam.y = viewH >= worldH ? (worldH-viewH)/2 : Math.max(0, Math.min(worldH-viewH, player.y - 12 - viewH/2));
+  const S0 = zoom*dpr; cam.x = Math.round(cam.x*S0)/S0; cam.y = Math.round(cam.y*S0)/S0;
+
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = pal.tree; ctx.fillRect(0,0,cvs.width,cvs.height);
+  ctx.imageSmoothingEnabled = false;
+  const S = zoom*dpr;
+  ctx.setTransform(S,0,0,S,-cam.x*S,-cam.y*S);
+  ctx.drawImage(off, 0, 0, worldW, worldH);
+  // place nodes: hollow until visited
+  PLACES.forEach(p => {
+    const [jx,jy] = p.junction, cx = jx*T+16, cy = jy*T+16, v = visited.has(p.id);
+    ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI*2);
+    ctx.fillStyle = v ? BC[p.branch] : pal.path; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = v ? pal.outline : BC[p.branch]; ctx.stroke();
+  });
+  // tap marker
+  if (tapMark){ tapMark.t += dt; const r = 6 + (tapMark.t*20 % 8); ctx.strokeStyle = BC.main; ctx.lineWidth = 2; ctx.strokeRect(tapMark.x - r, tapMark.y - r/2 - 2, r*2, r); }
+  // arrow over the nearby door
+  if (near && !paused){
+    const [dx0, dy0] = near.door, ax = dx0*T+16, ay = dy0*T + (reduced ? -6 : -6 + Math.sin(clock*6)*3);
+    ctx.fillStyle = BC.main; ctx.strokeStyle = pal.outline; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(ax-7, ay-8); ctx.lineTo(ax+7, ay-8); ctx.lineTo(ax, ay); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  drawPlayer(ctx);
+  // confetti in screen space
+  if (confetti.length){
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    confetti.forEach(c => { c.x += c.vx*dt; c.y += c.vy*dt; c.life -= dt; ctx.fillStyle = c.c; ctx.fillRect(Math.round(c.x), Math.round(c.y), c.s, c.s); });
+    confetti = confetti.filter(c => c.life > 0 && c.y < vh + 20);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Boot ---------- */
+let rt;
+addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(resize, 120); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', buildWorld);
+new MutationObserver(buildWorld).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+$('whoName').textContent = DATA.name; $('whoRole').textContent = DATA.role;
+$('introTitle').textContent = DATA.name; $('classicName').textContent = DATA.name;
+$('introRole').textContent = `${DATA.role}. I study merge conflicts that git can’t see.`;
+['siteLink','introSite','classicSite'].forEach(id => { $(id).href = DATA.links.home; });
+resize(); renderHUD(false);
+if (document.fonts && document.fonts.load){ Promise.all([document.fonts.load('700 12px "Pixelify Sans"'), document.fonts.ready]).then(buildWorld).catch(() => {}); }
+requestAnimationFrame(frame);
+$('startBtn').focus();
+})();
+</script>
+</body>
+</html>

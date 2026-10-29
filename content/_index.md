@@ -30,11 +30,27 @@ sections:
         size: medium # Options: small (150px), medium (200px, default), large (320px), xl (400px), xxl (500px)
         shape: circle # Options: circle (default), square, rounded
   - block: markdown
+    id: game
+    content:
+      title: ""
+      text: |-
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem;padding:1.25rem 1.5rem;border-radius:1rem;background:linear-gradient(135deg,#2d2450,#4a2f7a);color:#f6f1ff;box-shadow:0 6px 0 #0d0a18">
+          <div style="flex:1 1 260px">
+            <div style="font-size:1.25rem;font-weight:800">🎮 Prefer to explore?</div>
+            <div style="opacity:.85;margin-top:.25rem">Walk around Merge Village, a pixel village drawn like a git history, and discover my research, papers, projects and talks.</div>
+          </div>
+          <a href="game/" style="display:inline-block;padding:.8rem 1.2rem;border-radius:.75rem;background:#ffcf4a;color:#2a1d00;font-weight:800;text-decoration:none;box-shadow:0 4px 0 #c99a1d">▶ Play the gamified version</a>
+        </div>
+    design:
+      columns: "1"
+      spacing:
+        padding: ["2rem", 0, "1rem", 0]
+  - block: markdown
     content:
       title: "📚 My Research"
       subtitle: ""
       text: |-
-        I'm a research scientist in the SPGroup team at Cin UFPE. I investigate and develop tools and techniques for improving software development quality and productivity levels, especially by reducing unnecessary effort and frustration in software developers work activities. 
+        I'm a research scientist in the SPGroup team at CIn UFPE. I investigate and develop tools and techniques for improving software development quality and productivity levels, especially by reducing unnecessary effort and frustration in software developers work activities. 
 
         My main research interests are in the following topics and their integration: advanced (semantic) code merging tools, code integration conflicts, continuous integration and deployment, software modularity, software product lines, and refactoring. 
 
