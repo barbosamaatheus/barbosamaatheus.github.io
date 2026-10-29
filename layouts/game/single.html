@@ -305,6 +305,7 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
 </aside>
 
 <div class="zoom" role="group" aria-label="{{ $L.zoom }}">
+  <button class="btn" id="sceneBtn" type="button" aria-label="{{ $L.scenery }}" title="{{ $L.scenery }}">🎨</button>
   <button class="btn" id="zoomIn" type="button" aria-label="{{ $L.zoom_in }}" title="{{ $L.zoom_in }} (+)">+</button>
   <button class="btn" id="zoomOut" type="button" aria-label="{{ $L.zoom_out }}" title="{{ $L.zoom_out }} (−)">−</button>
   <button class="btn" id="zoomFit" type="button" aria-label="{{ $L.zoom_fit }}" title="{{ $L.zoom_fit }} (0)">⤢</button>
@@ -334,6 +335,30 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
     <button class="btn small close" id="placesClose" type="button">{{ $L.close }}<kbd>Esc</kbd></button>
   </header>
   <div class="body"><ul class="places" id="placesList"></ul></div>
+</section>
+
+<section class="dialog box" id="infoPanel" role="dialog" aria-modal="false" aria-labelledby="infoTitle" hidden>
+  <header>
+    <span class="emoji" id="infoEmoji" aria-hidden="true"></span>
+    <div>
+      <h2 id="infoTitle"></h2>
+      <div class="sub" id="infoSub"></div>
+    </div>
+    <button class="btn small close" id="infoClose" type="button">{{ $L.close }}<kbd>Esc</kbd></button>
+  </header>
+  <div class="body" id="infoBody"></div>
+</section>
+
+<section class="dialog box" id="scenePanel" role="dialog" aria-modal="false" aria-labelledby="sceneTitle" hidden>
+  <header>
+    <span class="emoji" aria-hidden="true">🎨</span>
+    <div>
+      <h2 id="sceneTitle">{{ $L.scenery }}</h2>
+      <div class="sub">{{ $L.scenery_sub }}</div>
+    </div>
+    <button class="btn small close" id="sceneClose" type="button">{{ $L.close }}<kbd>Esc</kbd></button>
+  </header>
+  <div class="body"><ul class="places" id="sceneList"></ul><div id="poiBox"></div></div>
 </section>
 
 <div class="scrim" id="intro">
@@ -519,7 +544,7 @@ function renderGame(){
 }
 
 /* ---------- World grid ---------- */
-const GRASS=0, PATH=1, WATER=2, TREE=3, FLOWER=4, BUILD=5;
+const GRASS=0, PATH=1, WATER=2, TREE=3, FLOWER=4, BUILD=5, SAND=6, LANDMARK=7;
 const G = new Uint8Array(W*H);
 const I = (x,y) => y*W + x;
 const inMap = (x,y) => x>=0 && y>=0 && x<W && y<H;
@@ -557,16 +582,270 @@ for (let y=0;y<H;y++) for (let x=0;x<W;x++){
   if (!near && r < .3) G[I(x,y)] = TREE;
   else if (r > .9) G[I(x,y)] = FLOWER;
 }
-const blocked = (tx,ty) => !inMap(tx,ty) || [WATER,TREE,BUILD].includes(G[I(tx,ty)]);
+const blocked = (tx,ty) => !inMap(tx,ty) || [WATER,TREE,BUILD,LANDMARK].includes(G[I(tx,ty)]);
 
 /* ---------- Palettes ---------- */
 const DAY = { grass:'#86b86a', grass2:'#7daf62', tuft:'#6a9b50', path:'#ead3a2', pathEdge:'#c9aa74', water:'#5aa9d6', waterHi:'#a3d5f0', tree:'#3d7d4f', treeHi:'#5d9e62', trunk:'#6b4a2f', wall:'#f3ead9', wallShade:'#dccfb6', door:'#4a3426', win:'#9ad0ec', glow:null, shadow:'rgba(20,35,20,.22)', plate:'#fbf8f0', plateInk:'#1f1d36', outline:'#1f1d36', roofDark:0 };
 const NIGHT = { grass:'#2f4d40', grass2:'#2b473b', tuft:'#243f33', path:'#6f6488', pathEdge:'#574d70', water:'#22436a', waterHi:'#3f6d9c', tree:'#1e3e31', treeHi:'#2b5444', trunk:'#3d2c22', wall:'#a9a2c4', wallShade:'#8b84aa', door:'#241a16', win:'#ffd56b', glow:'rgba(255,213,107,.32)', shadow:'rgba(0,0,0,.35)', plate:'#2f2b50', plateInk:'#efecff', outline:'#0b0a17', roofDark:.3 };
 let pal = DAY, isDark = false, BC = {};
+/* ---------- Scenes ---------- */
+// Each scene keeps the same roads and buildings and changes colours, how
+// trees, flowers and water are drawn, and (for the coast) the shape of the land.
+const hashXY = (x,y) => (x*73856093 ^ y*19349663) >>> 0;
+function defaultFlower(o, x, y){
+  const c = ['#f4d35e','#ee6c8a','#f7f7f2'][(x+y)%3];
+  o.fillStyle = c; o.fillRect(x*T+9, y*T+12, 4, 4); o.fillRect(x*T+20, y*T+20, 4, 4);
+  o.fillStyle = '#2f6b3a'; o.fillRect(x*T+10, y*T+16, 2, 3); o.fillRect(x*T+21, y*T+24, 2, 3);
+}
+function treeShadow(o, cx, cy, w){ o.fillStyle = pal.shadow; o.beginPath(); o.ellipse(cx, cy+12, w, 4, 0, 0, Math.PI*2); o.fill(); }
+const G0 = G.slice();
+// Coast layout: beach on row 17, sea below it, the lagoon opens into the sea,
+// a cliff with the lighthouse in the bottom-right corner and a few beach umbrellas.
+const SEA_Y = 18, BEACH_Y = 17;
+const isCliff = (x,y) => x >= 39 && x <= 42 && y >= 15 && y <= BEACH_Y;
+const UMBRELLAS = [[5,BEACH_Y],[13,BEACH_Y],[21,BEACH_Y]];
+const isLagoon = (x,y) => x >= 30 && x <= 34 && y >= 14 && y <= BEACH_Y;
+function nearLagoon(x,y){ for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++) if (isLagoon(x+dx,y+dy)) return true; return false; }
+function coconutPalm(o, cx, cy){
+  o.strokeStyle = pal.trunk; o.lineWidth = 4; o.lineCap = 'round';
+  o.beginPath(); o.moveTo(cx-3, cy+12); o.quadraticCurveTo(cx+5, cy+1, cx+1, cy-10); o.stroke();
+  o.strokeStyle = pal.tree; o.lineWidth = 3;
+  [[-14,-3],[15,-3],[-10,-15],[11,-16],[1,-19]].forEach(([dx,dy]) => {
+    o.beginPath(); o.moveTo(cx+1, cy-10); o.quadraticCurveTo(cx+1+dx/2, cy-10+dy-4, cx+1+dx, cy-10+dy+6); o.stroke();
+  });
+  o.strokeStyle = pal.treeHi; o.lineWidth = 1.5;
+  [[-10,-6],[11,-7]].forEach(([dx,dy]) => { o.beginPath(); o.moveTo(cx+1, cy-11); o.quadraticCurveTo(cx+1+dx/2, cy-11+dy-4, cx+1+dx, cy-11+dy+4); o.stroke(); });
+  o.fillStyle = '#7a5a2e'; o.beginPath(); o.arc(cx-1, cy-8, 2.5, 0, Math.PI*2); o.arc(cx+3, cy-8, 2.5, 0, Math.PI*2); o.fill();
+  o.lineCap = 'butt';
+}
+// Campus signs for the places I studied and worked: next to the University,
+// the Merge Lab (research) and between the Office and the Makerspace (career).
+const CAMPUS_SIGNS = [
+  { id:'ufpb', x:16, y:4, label:'UFPB', color:'#1c4f9c' },
+  { id:'cin', x:28, y:8, label:'CIn', color:'#b3282d' },
+  { id:'ifpe', x:18, y:13, label:'IFPE', color:'#2f8f3a' },
+];
+const SCENES = {
+  campus: {
+    emoji:'🏫',
+    grid(){
+      CAMPUS_SIGNS.forEach(({x, y}) => {
+        for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++){
+          const nx = x+dx, ny = y+dy;
+          if (inMap(nx,ny) && nx > 0 && ny > 0 && nx < W-1 && ny < H-1 && (G[I(nx,ny)] === TREE || G[I(nx,ny)] === FLOWER)) G[I(nx,ny)] = GRASS;
+        }
+        G[I(x,y)] = LANDMARK;
+      });
+    },
+    decor(o){
+      CAMPUS_SIGNS.forEach(({x, y, label, color}) => {
+        const cx = x*T + 16, by = y*T + 28;
+        o.fillStyle = pal.shadow; o.beginPath(); o.ellipse(cx, by, 18, 4, 0, 0, Math.PI*2); o.fill();
+        o.fillStyle = '#5b4636'; o.fillRect(cx-12, by-14, 3, 14); o.fillRect(cx+9, by-14, 3, 14);
+        o.fillStyle = color; o.fillRect(cx-17, by-30, 34, 18);
+        o.strokeStyle = pal.outline; o.lineWidth = 2; o.strokeRect(cx-17, by-30, 34, 18);
+        o.fillStyle = '#ffffff'; o.fillRect(cx-17, by-30, 34, 2);
+        o.font = '700 10px "Pixelify Sans", monospace'; o.textAlign = 'center'; o.textBaseline = 'middle';
+        o.fillText(label, cx, by-20);
+      });
+    },
+    day:{ grass:'#7cc36a', grass2:'#74ba61', tuft:'#88cc76', path:'#d9d6ce', pathEdge:'#a8a499', tree:'#3c8748', treeHi:'#5aa964', edge:'#5f9e52' },
+    night:{ path:'#5d5b72', pathEdge:'#47455b', edge:'#1f3029' },
+    ground(o, x, y){
+      // Mowed lawn stripes
+      if (x % 2 === 0){ o.fillStyle = pal.tuft; o.globalAlpha = .35; o.fillRect(x*T, y*T, T, T); o.globalAlpha = 1; }
+    },
+    tree(o, x, y, h){
+      const cx = x*T+16, cy = y*T+16, k = h % 4;
+      if (k === 0){
+        // Lamp post
+        o.fillStyle = '#5b5970'; o.fillRect(cx-1, cy-14, 3, 26);
+        o.fillStyle = '#2d2b40'; o.fillRect(cx-5, cy-19, 11, 5);
+        if (isDark){ o.fillStyle = 'rgba(255,213,107,.3)'; o.beginPath(); o.arc(cx, cy-14, 13, 0, Math.PI*2); o.fill(); }
+        o.fillStyle = isDark ? '#ffd56b' : '#fff3c4'; o.fillRect(cx-3, cy-15, 7, 3);
+      } else if (k === 1){
+        // Trimmed hedge
+        treeShadow(o, cx, cy, 13);
+        o.fillStyle = pal.tree; o.fillRect(x*T+3, y*T+9, 26, 18);
+        o.fillStyle = pal.treeHi; o.fillRect(x*T+3, y*T+9, 26, 5);
+        o.strokeStyle = pal.outline; o.lineWidth = 1.5; o.strokeRect(x*T+3, y*T+9, 26, 18);
+      } else {
+        // Ornamental tree
+        treeShadow(o, cx, cy, 9);
+        o.fillStyle = pal.trunk; o.fillRect(cx-2, cy+1, 4, 11);
+        o.fillStyle = pal.tree; o.beginPath(); o.arc(cx, cy-4, 10, 0, Math.PI*2); o.fill();
+        o.fillStyle = pal.treeHi; o.beginPath(); o.arc(cx-3, cy-8, 4, 0, Math.PI*2); o.fill();
+      }
+    },
+    flower(o, x, y){
+      if ((x + y) % 2 === 0){
+        // Bench
+        o.fillStyle = '#8a5a35'; o.fillRect(x*T+7, y*T+12, 18, 3); o.fillRect(x*T+7, y*T+17, 18, 4);
+        o.fillStyle = '#4a3426'; o.fillRect(x*T+8, y*T+21, 2, 5); o.fillRect(x*T+22, y*T+21, 2, 5);
+      } else defaultFlower(o, x, y);
+    },
+    waterTile(o, x, y){
+      // Paved square around the fountain
+      o.fillStyle = isDark ? '#5a5670' : '#cdc8bd'; o.fillRect(x*T, y*T, T, T);
+      o.fillStyle = isDark ? '#4b4760' : '#b9b3a6'; o.fillRect(x*T, y*T, T, 1); o.fillRect(x*T, y*T, 1, T); o.fillRect(x*T+16, y*T, 1, T);
+    },
+    pond(o){
+      const cx = 32.5*T, cy = 16*T;
+      o.fillStyle = isDark ? '#7a7690' : '#e7e2d6'; o.beginPath(); o.arc(cx, cy, 40, 0, Math.PI*2); o.fill();
+      o.strokeStyle = pal.outline; o.lineWidth = 2; o.stroke();
+      o.fillStyle = pal.water; o.beginPath(); o.arc(cx, cy, 32, 0, Math.PI*2); o.fill();
+      o.fillStyle = pal.waterHi; o.fillRect(cx-3, cy-14, 6, 20); o.fillRect(cx-12, cy-4, 4, 3); o.fillRect(cx+8, cy-4, 4, 3);
+      o.fillStyle = isDark ? '#7a7690' : '#e7e2d6'; o.beginPath(); o.arc(cx, cy+6, 6, 0, Math.PI*2); o.fill();
+    },
+  },
+  // Inspired by João Pessoa and Recife: beach with coconut palms, a reef with
+  // natural pools (Picãozinho, Boa Viagem), a jangada, an estuary with mangroves
+  // and an iron bridge (Capibaribe), and the Cabo Branco lighthouse on its cliff.
+  nordeste: {
+    emoji:'🏖️',
+    day:{ grass:'#6fbf5f', grass2:'#66b657', tuft:'#59a74c', path:'#efe3c4', pathEdge:'#cbb98e', water:'#36aaa2', waterHi:'#c4f3ee', tree:'#2e8a46', treeHi:'#55b866', trunk:'#8a6239', shadow:'rgba(20,60,40,.2)',
+          sand:'#f5e4b6', sandHi:'#e6d199', sea:'#36c8c6', sea2:'#1f9ac4', foam:'#ffffff', reef:'#5d4b3b', pool:'#86eadf', cliff:'#c9663e', cliffHi:'#e3906a', edge:'#1f9ac4' },
+    night:{ grass:'#2c4a3c', grass2:'#294536', tuft:'#233d31', path:'#6a6584', pathEdge:'#55506e', water:'#1d4a52', waterHi:'#5d9da3', tree:'#1d3f2c', treeHi:'#2f6141', trunk:'#4c3624',
+          sand:'#8b8166', sandHi:'#7b7157', sea:'#1f5670', sea2:'#143a55', foam:'#c8d8e8', reef:'#2b231c', pool:'#2f7480', cliff:'#6f3b27', cliffHi:'#8a5238', edge:'#143a55' },
+    grid(){
+      for (let x=0;x<W;x++){
+        for (let y=SEA_Y;y<H;y++) if (G[I(x,y)] !== BUILD && G[I(x,y)] !== PATH) G[I(x,y)] = WATER;
+        const g = G[I(x,BEACH_Y)];
+        if (g === GRASS || g === FLOWER) G[I(x,BEACH_Y)] = SAND;
+      }
+      // Room around the lighthouse cliff, then the cliff itself.
+      for (let y=13;y<=BEACH_Y;y++) for (let x=37;x<=43;x++) if (G[I(x,y)] === TREE && !(x === W-1)) G[I(x,y)] = y === BEACH_Y ? SAND : GRASS;
+      for (let y=15;y<=BEACH_Y;y++) for (let x=39;x<=42;x++) G[I(x,y)] = LANDMARK;
+      UMBRELLAS.forEach(([x,y]) => { if (G[I(x,y)] !== PATH && G[I(x,y)] !== BUILD) G[I(x,y)] = LANDMARK; });
+    },
+    ground(o, x, y, h){
+      if (h % 7 === 0){ o.fillStyle = pal.tuft; o.fillRect(x*T + (h%20), y*T + (h>>5)%22 + 4, 3, 2); }
+    },
+    sandTile(o, x, y, h){
+      o.fillStyle = pal.sand; o.fillRect(x*T, y*T, T, T);
+      o.fillStyle = pal.sandHi; o.fillRect(x*T + (h%24), y*T + (h>>4)%24 + 4, 2, 2); o.fillRect(x*T + (h>>3)%26 + 3, y*T + (h>>7)%20 + 8, 2, 2);
+    },
+    landmarkTile(o, x, y, h){
+      if (isCliff(x, y)){
+        // Red-orange cliff (falésia) under the lighthouse
+        o.fillStyle = pal.cliff; o.fillRect(x*T, y*T, T, T);
+        o.fillStyle = pal.cliffHi; o.fillRect(x*T, y*T + 8 + (x%2)*6, T, 3); o.fillRect(x*T, y*T + 22, T, 2);
+        if (y === 15){ o.fillStyle = pal.grass; o.fillRect(x*T, y*T, T, 7); o.fillStyle = pal.tree; o.fillRect(x*T, y*T+5, T, 3); }
+      } else this.sandTile(o, x, y, h);
+    },
+    waterTile(o, x, y){
+      if (y >= SEA_Y){
+        o.fillStyle = y === SEA_Y ? pal.sea : pal.sea2; o.fillRect(x*T, y*T, T, T);
+        o.fillStyle = pal.foam; o.globalAlpha = .55;
+        if ((x + y) % 2 === 0) o.fillRect(x*T + 6, y*T + 12, 12, 2); else o.fillRect(x*T + 14, y*T + 22, 10, 2);
+        o.globalAlpha = 1;
+      } else {
+        o.fillStyle = pal.water; o.fillRect(x*T, y*T, T, T);
+        o.fillStyle = pal.waterHi; o.globalAlpha = .6;
+        if ((x + y) % 2 === 0){ o.fillRect(x*T+6, y*T+10, 10, 2); o.fillRect(x*T+16, y*T+22, 8, 2); }
+        o.globalAlpha = 1;
+      }
+    },
+    pond(o){
+      // Foam where the waves meet the sand
+      o.fillStyle = pal.foam;
+      for (let x=0;x<W;x++) if (G[I(x,SEA_Y-1)] !== WATER){
+        for (let k=0;k<T;k+=8) o.fillRect(x*T + k, SEA_Y*T + ((k/8 + x) % 2 ? 1 : 3), 6, 3);
+      }
+      // Reef barrier with calm natural pools between it and the beach
+      o.fillStyle = pal.pool; o.globalAlpha = .75;
+      [[4,18.45,2.2],[11,18.5,2.6],[18.5,18.45,2],[25,18.5,2.4]].forEach(([x,y,w]) => { o.beginPath(); o.ellipse(x*T, y*T, w*T, .32*T, 0, 0, Math.PI*2); o.fill(); });
+      o.globalAlpha = 1;
+      for (let x=2;x<=28;x++){
+        const hh = hashXY(x, 99);
+        o.fillStyle = pal.reef; o.fillRect(x*T + (hh%6), 19*T + 4 + (hh>>3)%4, T - 6 + (hh>>5)%6, 6);
+        o.fillStyle = pal.foam; o.globalAlpha = .7; o.fillRect(x*T + (hh%6) + 2, 19*T + 2 + (hh>>3)%4, T - 12, 2); o.globalAlpha = 1;
+      }
+      // A jangada beyond the beach
+      const bx = 33*T, by = 19*T + 2;
+      o.fillStyle = '#7a5230'; o.fillRect(bx, by, 44, 8);
+      o.fillStyle = '#5c3c22'; o.fillRect(bx, by+6, 44, 2);
+      o.fillStyle = '#4a3426'; o.fillRect(bx+18, by-34, 2, 34);
+      o.fillStyle = isDark ? '#d8d2c4' : '#fbf6ea';
+      o.beginPath(); o.moveTo(bx+20, by-34); o.lineTo(bx+44, by-4); o.lineTo(bx+20, by-4); o.closePath(); o.fill();
+      o.strokeStyle = pal.outline; o.lineWidth = 1.5; o.stroke();
+      // Iron arch bridge over the estuary, a nod to Recife's bridges
+      const x0 = 29.6*T, x1 = 35.4*T, yb = 15.7*T;
+      o.strokeStyle = isDark ? '#7d8f88' : '#3f5a52'; o.lineWidth = 3;
+      for (let k=0;k<2;k++){ const ax = x0 + k*(x1-x0)/2, aw = (x1-x0)/2; o.beginPath(); o.moveTo(ax, yb); o.quadraticCurveTo(ax + aw/2, yb - 34, ax + aw, yb); o.stroke(); }
+      o.lineWidth = 1.5;
+      for (let xx = x0 + 8; xx < x1; xx += 10){ o.beginPath(); o.moveTo(xx, yb); o.lineTo(xx, yb - 12); o.stroke(); }
+      o.fillStyle = isDark ? '#5b6964' : '#6b7f78'; o.fillRect(x0, yb, x1 - x0, 6);
+      o.strokeStyle = pal.outline; o.lineWidth = 1.5; o.strokeRect(x0, yb, x1 - x0, 6);
+    },
+    tree(o, x, y, h){
+      const cx = x*T+16, cy = y*T+16;
+      treeShadow(o, cx, cy, 10);
+      if (nearLagoon(x, y)){
+        // Mangrove: low crown on arching roots
+        o.strokeStyle = pal.trunk; o.lineWidth = 2;
+        [-8,-3,3,8].forEach(dx => { o.beginPath(); o.moveTo(cx+dx/2, cy); o.quadraticCurveTo(cx+dx, cy+4, cx+dx*1.4, cy+12); o.stroke(); });
+        o.fillStyle = pal.tree; o.beginPath(); o.ellipse(cx, cy-4, 14, 9, 0, 0, Math.PI*2); o.fill();
+        o.fillStyle = pal.treeHi; o.beginPath(); o.ellipse(cx-4, cy-8, 6, 3, 0, 0, Math.PI*2); o.fill();
+      } else if (y >= 14 || h % 3 === 0){
+        coconutPalm(o, cx, cy);
+      } else {
+        // Cashew tree with its red and yellow fruits
+        o.fillStyle = pal.trunk; o.fillRect(cx-2, cy, 4, 12);
+        o.fillStyle = pal.tree; o.beginPath(); o.arc(cx-5, cy-4, 10, 0, Math.PI*2); o.arc(cx+6, cy-3, 9, 0, Math.PI*2); o.fill();
+        o.fillStyle = pal.treeHi; o.beginPath(); o.arc(cx-7, cy-9, 4, 0, Math.PI*2); o.fill();
+        o.fillStyle = '#e8463c'; o.fillRect(cx-8, cy-1, 3, 3); o.fillRect(cx+5, cy+1, 3, 3);
+        o.fillStyle = '#f2b632'; o.fillRect(cx+1, cy-6, 3, 3);
+      }
+    },
+    flower(o, x, y, h){
+      // Hibiscus in red, pink and yellow
+      const c = ['#e8463c','#ff6fa8','#f2c230'][h % 3], fx = x*T + 8 + (h%10), fy = y*T + 10 + (h>>4)%10;
+      o.fillStyle = '#2f7a3a'; o.fillRect(fx+2, fy+5, 2, 5);
+      o.fillStyle = c; o.fillRect(fx, fy+2, 2, 2); o.fillRect(fx+4, fy+2, 2, 2); o.fillRect(fx+2, fy, 2, 2); o.fillRect(fx+2, fy+4, 2, 2);
+      o.fillStyle = '#ffe9a8'; o.fillRect(fx+2, fy+2, 2, 2);
+    },
+    decor(o){
+      // Beach umbrellas
+      UMBRELLAS.forEach(([x,y], i) => {
+        if (G[I(x,y)] !== LANDMARK) return;
+        const cx = x*T + 16, cy = y*T + 20;
+        o.fillStyle = pal.shadow; o.beginPath(); o.ellipse(cx+4, cy+6, 12, 4, 0, 0, Math.PI*2); o.fill();
+        o.fillStyle = '#f5f1e6'; o.fillRect(cx-1, cy-14, 2, 20);
+        const cols = [['#e8463c','#fff6e0'],['#1f9ac4','#ffd23f'],['#2e8a46','#fff6e0']][i % 3];
+        for (let k=0;k<4;k++){ o.fillStyle = cols[k%2]; o.beginPath(); o.moveTo(cx, cy-22); o.arc(cx, cy-14, 13, Math.PI + k*Math.PI/4, Math.PI + (k+1)*Math.PI/4); o.closePath(); o.fill(); }
+      });
+      // Cabo Branco lighthouse: a white, three-edged tower on the cliff
+      const lx = 41*T, base = 15.3*T, top = 12.2*T;
+      if (isDark){
+        o.fillStyle = 'rgba(255,230,140,.18)';
+        o.beginPath(); o.moveTo(lx, top+4); o.lineTo(lx-5*T, top-1.4*T); o.lineTo(lx-5*T, top+1.6*T); o.closePath(); o.fill();
+      }
+      o.fillStyle = isDark ? '#d9d4e6' : '#fbfaf6';
+      o.beginPath(); o.moveTo(lx-16, base); o.lineTo(lx-6, top+10); o.lineTo(lx+6, top+10); o.lineTo(lx+16, base); o.closePath(); o.fill();
+      o.strokeStyle = pal.outline; o.lineWidth = 2; o.stroke();
+      o.strokeStyle = isDark ? '#a9a2c4' : '#c9c4b6'; o.lineWidth = 1.5;
+      o.beginPath(); o.moveTo(lx, base); o.lineTo(lx, top+10); o.stroke();
+      o.beginPath(); o.moveTo(lx-16, base); o.lineTo(lx-22, base-14); o.lineTo(lx-11, base-8); o.moveTo(lx+16, base); o.lineTo(lx+22, base-14); o.lineTo(lx+11, base-8); o.stroke();
+      o.fillStyle = '#2d2b40'; o.fillRect(lx-7, top, 14, 10);
+      o.fillStyle = isDark ? '#ffd56b' : '#bfe6f5'; o.fillRect(lx-5, top+2, 10, 6);
+      o.fillStyle = '#c23c33'; o.fillRect(lx-8, top-3, 16, 3);
+    },
+  },
+};
+const SCENE_KEY = 'mergeVillageScene';
+// The coast is the default scene; it is also listed first in the picker.
+const SCENE_ORDER = ['nordeste', 'campus'];
+let scene = 'nordeste';
+try { const sv = localStorage.getItem(SCENE_KEY); if (SCENES[sv]) scene = sv; } catch (e) {}
+function applySceneGrid(){ G.set(G0); if (SCENES[scene].grid) SCENES[scene].grid(); }
+applySceneGrid();
+
 function readTheme(){
   const attr = document.documentElement.getAttribute('data-theme');
   isDark = attr === 'dark' || (attr !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
-  pal = isDark ? NIGHT : DAY;
+  const sc = SCENES[scene];
+  pal = Object.assign({}, isDark ? NIGHT : DAY, isDark ? sc.night : sc.day);
   const cs = getComputedStyle(document.documentElement);
   BC = { main:cs.getPropertyValue('--main').trim(), academia:cs.getPropertyValue('--academia').trim(), industry:cs.getPropertyValue('--industry').trim() };
 }
@@ -604,6 +883,7 @@ function zoomBy(f){ userZoom *= f; applyZoom(); }
 function zoomFit(){ userZoom = zoom <= fitZoom() + 1e-3 ? 1 : fitZoom() / baseZoom; applyZoom(); }
 function buildWorld(){
   readTheme();
+  const sc = SCENES[scene];
   off = document.createElement('canvas');
   off.width = Math.ceil(W*T*R); off.height = Math.ceil(H*T*R);
   const o = off.getContext('2d');
@@ -613,7 +893,8 @@ function buildWorld(){
     const h = (x*73856093 ^ y*19349663) >>> 0;
     o.fillStyle = (h % 3 === 0) ? pal.grass2 : pal.grass;
     o.fillRect(x*T, y*T, T, T);
-    if (h % 5 === 0){ o.fillStyle = pal.tuft; o.fillRect(x*T + (h%20), y*T + (h>>5)%22 + 4, 3, 2); o.fillRect(x*T + (h%20) + 4, y*T + (h>>5)%22 + 2, 2, 3); }
+    if (sc.ground) sc.ground(o, x, y, h);
+    else if (h % 5 === 0){ o.fillStyle = pal.tuft; o.fillRect(x*T + (h%20), y*T + (h>>5)%22 + 4, 3, 2); o.fillRect(x*T + (h%20) + 4, y*T + (h>>5)%22 + 2, 2, 3); }
   }
   // paths and water
   for (let y=0;y<H;y++) for (let x=0;x<W;x++){
@@ -625,19 +906,23 @@ function buildWorld(){
       if (!inMap(x,y+1) || G[I(x,y+1)]!==PATH) o.fillRect(x*T, y*T+T-2, T, 2);
       if (!inMap(x-1,y) || G[I(x-1,y)]!==PATH) o.fillRect(x*T, y*T, 2, T);
       if (!inMap(x+1,y) || G[I(x+1,y)]!==PATH) o.fillRect(x*T+T-2, y*T, 2, T);
+    } else if (g === SAND && sc.sandTile){
+      sc.sandTile(o, x, y, hashXY(x, y));
+    } else if (g === LANDMARK && sc.landmarkTile){
+      sc.landmarkTile(o, x, y, hashXY(x, y));
+    } else if (g === WATER && sc.waterTile){
+      sc.waterTile(o, x, y);
     } else if (g === WATER){
       o.fillStyle = pal.water; o.fillRect(x*T, y*T, T, T);
       o.fillStyle = pal.waterHi;
       if ((x+y)%2===0){ o.fillRect(x*T+6, y*T+10, 10, 2); o.fillRect(x*T+16, y*T+22, 8, 2); }
     } else if (g === FLOWER){
-      const cols = ['#f4d35e','#ee6c8a','#f7f7f2'];
-      const c = cols[(x+y)%3];
-      o.fillStyle = c; o.fillRect(x*T+9, y*T+12, 4, 4); o.fillRect(x*T+20, y*T+20, 4, 4);
-      o.fillStyle = '#2f6b3a'; o.fillRect(x*T+10, y*T+16, 2, 3); o.fillRect(x*T+21, y*T+24, 2, 3);
+      (sc.flower || defaultFlower)(o, x, y, hashXY(x, y));
     }
   }
-  // pond rim
-  o.strokeStyle = pal.waterHi; o.lineWidth = 2; o.strokeRect(30*T+1, 14*T+1, 5*T-2, 4*T-2);
+  // pond rim (or the scene's own pond: jangada, fountain, conflict zone)
+  if (sc.pond) sc.pond(o);
+  else { o.strokeStyle = pal.waterHi; o.lineWidth = 2; o.strokeRect(30*T+1, 14*T+1, 5*T-2, 4*T-2); }
   // branch lines along roads
   o.lineCap = 'square'; o.lineJoin = 'miter';
   const line = (pts, col) => { o.strokeStyle = col; o.lineWidth = 4; o.beginPath(); pts.forEach(([x,y],i) => { const px=x*T+16, py=y*T+16; i ? o.lineTo(px,py) : o.moveTo(px,py); }); o.stroke(); };
@@ -650,12 +935,14 @@ function buildWorld(){
   });
   // trees
   for (let y=0;y<H;y++) for (let x=0;x<W;x++) if (G[I(x,y)]===TREE){
+    if (sc.tree){ sc.tree(o, x, y, hashXY(x, y)); continue; }
     const cx = x*T+16, cy = y*T+16;
     o.fillStyle = pal.shadow; o.beginPath(); o.ellipse(cx, cy+12, 12, 4, 0, 0, Math.PI*2); o.fill();
     o.fillStyle = pal.trunk; o.fillRect(cx-3, cy+2, 6, 10);
     o.fillStyle = pal.tree; o.beginPath(); o.arc(cx, cy-2, 13, 0, Math.PI*2); o.fill();
     o.fillStyle = pal.treeHi; o.beginPath(); o.arc(cx-4, cy-7, 6, 0, Math.PI*2); o.fill();
   }
+  if (sc.decor) sc.decor(o);
   // labels (after the trees so they are never hidden)
   o.font = '700 12px "Pixelify Sans", monospace'; o.textAlign = 'center'; o.textBaseline = 'middle';
   const label = (txt, x, y, col) => { o.lineJoin = 'round'; o.lineWidth = 4; o.strokeStyle = pal.outline; o.strokeText(txt, x, y); o.fillStyle = col; o.fillText(txt, x, y); };
@@ -810,6 +1097,61 @@ function openPlaces(){
   $('placesList').querySelector('button').focus();
 }
 function closePlaces(){ if ($('placesPanel').hidden) return; $('placesPanel').hidden = true; paused = false; cvs.focus({ preventScroll:true }); }
+/* Points of interest in the Nordeste scene: click or tap them for a short note. */
+const inRect = (x,y,[rx,ry,rw,rh]) => x >= rx && x <= rx+rw && y >= ry && y <= ry+rh;
+const isPalm = (tx,ty) => ty >= 14 || hashXY(tx,ty) % 3 === 0;
+const NORDESTE_POIS = [
+  { id:'jangada', emoji:'⛵', marker:[33*T+30, 18*T-10], hit:(x,y) => inRect(x,y,[33*T-6, 18*T-6, 56, 46]) },
+  { id:'lighthouse', emoji:'🗼', marker:[42.3*T, 12.6*T], hit:(x,y) => inRect(x,y,[39*T, 12*T, 4*T, 6*T]) },
+  { id:'bridge', emoji:'🌉', marker:[32.5*T, 14.6*T], hit:(x,y) => inRect(x,y,[29.6*T, 15.15*T, 5.8*T, .85*T]) },
+  { id:'beach', emoji:'⛱️', marker:[UMBRELLAS[1][0]*T+16, UMBRELLAS[1][1]*T-14], hit:(x,y,tx,ty) =>
+      UMBRELLAS.some(([ux,uy]) => ux === tx && uy === ty) || (G[I(tx,ty)] === TREE && !nearLagoon(tx,ty) && isPalm(tx,ty)) },
+  { id:'mangrove', emoji:'🌿', marker:[30.4*T, 16.9*T], hit:(x,y,tx,ty) => isLagoon(tx,ty) || (G[I(tx,ty)] === TREE && nearLagoon(tx,ty)) },
+  { id:'reef', emoji:'🐠', marker:[11*T, 18.45*T], hit:(x,y,tx,ty) => ty >= SEA_Y },
+  { id:'cashew', emoji:'🌳', hit:(x,y,tx,ty) => G[I(tx,ty)] === TREE && !nearLagoon(tx,ty) && !isPalm(tx,ty) },
+];
+const CAMPUS_POIS = CAMPUS_SIGNS.map(c => ({
+  id: c.id, emoji: '🏛️', marker: [c.x*T + 16, c.y*T - 6],
+  hit: (x, y) => inRect(x, y, [c.x*T - 4, c.y*T - 6, T + 8, T + 8]),
+}));
+const scenePois = () => scene === 'nordeste' ? NORDESTE_POIS : scene === 'campus' ? CAMPUS_POIS : [];
+function poiAt(x, y){
+  const pois = scenePois();
+  if (!pois.length) return null;
+  const tx = Math.floor(x / T), ty = Math.floor(y / T);
+  if (!inMap(tx, ty)) return null;
+  return pois.find(p => p.hit(x, y, tx, ty)) || null;
+}
+function openInfo(poi){
+  closePanel(); closePlaces(); closeScenes(); paused = true; route = null; autoEnter = null;
+  $('infoEmoji').textContent = poi.emoji;
+  $('infoTitle').textContent = t['poi_' + poi.id + '_title'];
+  $('infoSub').textContent = t['scene_' + scene];
+  $('infoBody').innerHTML = `<p>${esc(t['poi_' + poi.id + '_text'])}</p>`;
+  $('infoPanel').hidden = false; $('prompt').hidden = true;
+  $('infoClose').focus();
+}
+function closeInfo(){ if ($('infoPanel').hidden) return; $('infoPanel').hidden = true; paused = false; cvs.focus({ preventScroll:true }); }
+$('infoClose').onclick = closeInfo;
+$('poiBox').addEventListener('click', e => { const b = e.target.closest('[data-poi]'); if (b) openInfo(scenePois().find(p => p.id === b.dataset.poi)); });
+function openScenes(){
+  closePanel(); closePlaces(); paused = true;
+  $('sceneList').innerHTML = SCENE_ORDER.map(id => [id, SCENES[id]]).map(([id, sc]) => `<li><button class="btn" type="button" data-scene="${id}" aria-pressed="${id === scene}"><span class="e" aria-hidden="true">${sc.emoji}</span><span><b>${esc(t['scene_' + id])}</b><small>${esc(t['scene_' + id + '_desc'])}</small></span>${id === scene ? `<span class="done" aria-label="${esc(t.current)}">✓</span>` : ''}</button></li>`).join('');
+  $('poiBox').innerHTML = scenePois().length ? `<h3>${esc(t.poi_heading)}</h3><p class="meta">${esc(t.poi_hint)}</p><ul class="places">${scenePois().map(p => `<li><button class="btn" type="button" data-poi="${p.id}"><span class="e" aria-hidden="true">${p.emoji}</span><span><b>${esc(t['poi_' + p.id + '_title'])}</b></span></button></li>`).join('')}</ul>` : '';
+  $('scenePanel').hidden = false;
+  $('sceneList').querySelector('[aria-pressed="true"]').focus();
+}
+function closeScenes(){ if ($('scenePanel').hidden) return; $('scenePanel').hidden = true; paused = false; cvs.focus({ preventScroll:true }); }
+function setScene(id){
+  scene = id;
+  try { localStorage.setItem(SCENE_KEY, id); } catch (e) {}
+  applySceneGrid();
+  if (!canStand(player.x, player.y)){ [player.x, player.y] = center(byId.home.stand[0], byId.home.stand[1]); route = null; }
+  buildWorld(); closeScenes();
+}
+$('sceneBtn').onclick = openScenes;
+$('sceneClose').onclick = closeScenes;
+$('sceneList').addEventListener('click', e => { const b = e.target.closest('[data-scene]'); if (b) setScene(b.dataset.scene); });
 function teleport(p){ [player.x, player.y] = center(p.stand[0], p.stand[1]); player.dir = 'up'; openPlace(p); }
 
 $('panelClose').onclick = closePanel;
@@ -868,6 +1210,8 @@ addEventListener('keydown', e => {
   if (e.key === 'Escape'){
     if (!$('panel').hidden) closePanel();
     else if (!$('placesPanel').hidden) closePlaces();
+    else if (!$('scenePanel').hidden) closeScenes();
+    else if (!$('infoPanel').hidden) closeInfo();
     else if (!$('classic').hidden) closeClassic();
     else if (!$('done').hidden) $('doneClose').click();
     return;
@@ -890,6 +1234,7 @@ cvs.addEventListener('wheel', e => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1
 const touches = new Map(); let pinch = null;
 cvs.addEventListener('pointerdown', e => { touches.set(e.pointerId, [e.clientX, e.clientY]); if (touches.size === 2){ const [a,b] = [...touches.values()]; pinch = { d: Math.hypot(a[0]-b[0], a[1]-b[1]), z: userZoom }; route = null; autoEnter = null; tapMark = null; } });
 cvs.addEventListener('pointermove', e => {
+  if (e.pointerType === 'mouse') cvs.style.cursor = poiAt(e.clientX / zoom + cam.x, e.clientY / zoom + cam.y) ? 'help' : 'pointer';
   if (!touches.has(e.pointerId)) return;
   touches.set(e.pointerId, [e.clientX, e.clientY]);
   if (pinch && touches.size === 2){ const [a,b] = [...touches.values()]; userZoom = pinch.z * Math.hypot(a[0]-b[0], a[1]-b[1]) / pinch.d; applyZoom(); }
@@ -917,6 +1262,8 @@ function bfs(sx,sy,tx,ty){
 cvs.addEventListener('pointerdown', e => {
   if (paused || touches.size > 1) return;
   const wx = e.clientX / zoom + cam.x, wy = e.clientY / zoom + cam.y;
+  const poi = poiAt(wx, wy);
+  if (poi){ openInfo(poi); return; }
   let tx = Math.floor(wx / T), ty = Math.floor(wy / T);
   const ptx = Math.floor(player.x / T), pty = Math.floor((player.y - 4) / T);
   let target = null;
@@ -978,7 +1325,7 @@ function frame(now){
   const S0 = zoom*dpr; cam.x = Math.round(cam.x*S0)/S0; cam.y = Math.round(cam.y*S0)/S0;
 
   ctx.setTransform(1,0,0,1,0,0);
-  ctx.fillStyle = pal.tree; ctx.fillRect(0,0,cvs.width,cvs.height);
+  ctx.fillStyle = pal.edge || pal.tree; ctx.fillRect(0,0,cvs.width,cvs.height);
   ctx.imageSmoothingEnabled = false;
   const S = zoom*dpr;
   ctx.setTransform(S,0,0,S,-cam.x*S,-cam.y*S);
@@ -997,6 +1344,17 @@ function frame(now){
     const [dx0, dy0] = near.door, ax = dx0*T+16, ay = dy0*T + (reduced ? -6 : -6 + Math.sin(clock*6)*3);
     ctx.fillStyle = BC.main; ctx.strokeStyle = pal.outline; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(ax-7, ay-8); ctx.lineTo(ax+7, ay-8); ctx.lineTo(ax, ay); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  if (scenePois().length && !paused){
+    const bob = reduced ? 0 : Math.sin(clock*3) * 2;
+    scenePois().forEach(p => {
+      if (!p.marker) return;
+      const [mx, my] = p.marker;
+      ctx.beginPath(); ctx.arc(mx, my + bob, 7, 0, Math.PI*2);
+      ctx.fillStyle = BC.main; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = pal.outline; ctx.stroke();
+      ctx.fillStyle = '#1f1d36'; ctx.font = '700 10px "Pixelify Sans", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('i', mx, my + bob + 1);
+    });
   }
   drawPlayer(ctx);
   // confetti in screen space

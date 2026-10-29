@@ -18,6 +18,6 @@ main:
   - name: Cursos
     url: courses/
     weight: 40
-  - name: 🎮 Jogo
+  - name: Jogo
     url: game/
     weight: 50

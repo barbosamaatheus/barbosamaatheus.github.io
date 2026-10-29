@@ -17,7 +17,7 @@ visit_history: Your visit history
 progress: "{n} of {total} visited"
 visited: visited
 intro_tagline: I study merge conflicts that git can’t see.
-intro_text: My work lives in a small village drawn like a git history. Walk around and step into the buildings.
+intro_text: "My work lives in a small village drawn like a git history, like the merges I study. The scenery (🎨) is the Northeast coast, where I studied and work, or a campus like the ones where I trained and now teach. Walk around and step into the buildings."
 legend_main: "main road: about me, talks, research and contact"
 legend_academia: "feature/academia: education and papers"
 legend_industry: "feature/career: experience and projects"
@@ -111,3 +111,38 @@ back_to_lab: Back to the lab
 explain_textual: Both branches changed the same line, so git stops and asks someone to choose. Annoying, but at least it’s visible.
 explain_clean: The edits touch different methods that share no state. Git merges them and the program does what both developers expect.
 explain_semantic: Git merges this without a warning, but the right branch’s assignment overwrites the left branch’s discount, so customers never get it. This is an overriding assignment interference, the kind of conflict my research detects with static analysis.
+
+# Scenery
+scenery: Scenery
+scenery_sub: Change the look of the village
+current: current
+scene_nordeste: Northeast Brazil
+scene_nordeste_desc: Beaches, coconut palms, reefs with natural pools, mangroves and the Cabo Branco lighthouse, inspired by João Pessoa and Recife Click the landmarks to learn more.
+scene_campus: Campus
+scene_campus_desc: Mowed lawns, hedges, benches, lamp posts, a fountain square and signs for the campuses I’ve been part of (UFPB, CIn, IFPE). Click the signs to learn more.
+
+# Nordeste points of interest
+poi_heading: Points of interest
+poi_hint: You can also click or tap them on the map.
+poi_lighthouse_title: Cabo Branco Lighthouse · João Pessoa
+poi_lighthouse_text: Built in 1972 on the Cabo Branco cliff, next to Ponta do Seixas, the easternmost point of mainland Brazil and of the Americas. That is why João Pessoa is known as the city where the sun rises first. The lighthouse’s three-edged shape is often said to evoke the sisal plant, long important to Paraíba’s economy.
+poi_reef_title: Reefs and natural pools · Recife and João Pessoa
+poi_reef_text: Most of Boa Viagem beach in Recife is protected by a long reef barrier, the arrecifes that gave the city its name. At low tide the reefs form calm natural pools. In João Pessoa, boats leave Tambaú for the Picãozinho reefs, which also form natural pools at low tide.
+poi_bridge_title: Bridges over the Capibaribe · Recife
+poi_bridge_text: Recife is crossed by the Capibaribe and other rivers and by dozens of canals, joined by many bridges, which is why it is called the Brazilian Venice. The iron Ponte da Boa Vista, built in 1874, is one of its best-known historic bridges.
+poi_jangada_title: Jangada
+poi_jangada_text: A traditional raft with a triangular sail, used for generations by fishermen along the Northeast coast. Today jangadas also take visitors out to the reefs and natural pools, as in Porto de Galinhas.
+poi_mangrove_title: Mangroves
+poi_mangrove_text: Mangrove forests grow where rivers meet the sea and are nurseries for crabs and fish. In Recife they inspired Manguebeat, the 1990s music movement led by Chico Science & Nação Zumbi.
+poi_beach_title: Beaches and coconut palms · Tambaú and Cabo Branco
+poi_beach_text: João Pessoa’s seafront mixes lively Tambaú, with its boardwalk and beach kiosks, and quieter Cabo Branco, with its cliffs. Coconut palms line much of the Northeast coast, and fresh coconut water is a beach classic.
+poi_cashew_title: Cashew tree
+poi_cashew_text: The cashew tree is native to Brazil’s Northeast. Its juicy fruit, the caju, becomes juice and sweets, and the nut that hangs below it is roasted.
+
+# Campus points of interest
+poi_ufpb_title: UFPB Campus IV · Rio Tinto
+poi_ufpb_text: The Federal University of Paraíba opened Campus IV, in Rio Tinto and Mamanguape on the north coast of Paraíba, in 2006. Its Licentiate in Computer Science was the first offered by a federal institution in the state. I studied there from 2014 to 2019, took part in the Computação Plugada project, and came back as a professor from 2024 to 2025.
+poi_cin_title: CIn UFPE · Recife
+poi_cin_text: The Centro de Informática of the Federal University of Pernambuco, in the Cidade Universitária in Recife, is one of Brazil’s leading computing schools, and its three undergraduate programs are among the most sought after at UFPE. I did my master’s there (2020–2022) and I’m now doing my PhD in the SPGroup, researching semantic merge conflicts.
+poi_ifpe_title: IFPE Campus Belo Jardim
+poi_ifpe_text: In the Agreste of Pernambuco, the campus began as an agricultural school in 1958, became the Escola Agrotécnica Federal de Belo Jardim in 1979 and joined the Federal Institute of Pernambuco in 2008. Today it also offers a bachelor’s degree in Software Engineering. I have taught Software Engineering there since July 2026 and coordinate the GirliES extension project.

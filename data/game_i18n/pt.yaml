@@ -15,7 +15,7 @@ visit_history: Seu histórico de visitas
 progress: "{n} de {total} visitados"
 visited: visitado
 intro_tagline: Estudo conflitos de merge que o git não consegue ver.
-intro_text: Meu trabalho mora numa pequena vila desenhada como um histórico do git. Passeie e entre nos prédios.
+intro_text: "Meu trabalho mora numa pequena vila desenhada como um histórico do git, como os merges que estudo. O cenário (🎨) é o litoral do Nordeste, onde estudei e trabalho, ou um campus como os que me formaram e onde hoje ensino. Passeie e entre nos prédios."
 legend_main: "estrada main: sobre mim, palestras, pesquisa e contato"
 legend_academia: "feature/academia: formação e artigos"
 legend_industry: "feature/career: experiência e projetos"
@@ -109,3 +109,38 @@ back_to_lab: Voltar ao laboratório
 explain_textual: As duas branches mudaram a mesma linha, então o git para e pede que alguém escolha. Chato, mas pelo menos é visível.
 explain_clean: As mudanças estão em métodos diferentes que não compartilham estado. O git faz o merge e o programa faz o que as duas pessoas esperavam.
 explain_semantic: O git faz esse merge sem nenhum aviso, mas a atribuição da branch da direita sobrescreve o desconto da branch da esquerda, e o cliente nunca recebe o desconto. Isso é uma interferência de overriding assignment, o tipo de conflito que minha pesquisa detecta com análise estática.
+
+# Cenário
+scenery: Cenário
+scenery_sub: Mude o visual da vila
+current: atual
+scene_nordeste: Nordeste
+scene_nordeste_desc: Praias, coqueiros, recifes com piscinas naturais, mangue e o Farol do Cabo Branco, inspirado em João Pessoa e Recife Clique nos pontos marcados para saber mais.
+scene_campus: Campus
+scene_campus_desc: Gramados aparados, cercas vivas, bancos, postes, uma praça com fonte e placas dos campi por onde passei (UFPB, CIn, IFPE). Clique nas placas para saber mais.
+
+# Pontos de interesse do Nordeste
+poi_heading: Pontos de interesse
+poi_hint: Você também pode clicar ou tocar neles no mapa.
+poi_lighthouse_title: Farol do Cabo Branco · João Pessoa
+poi_lighthouse_text: Construído em 1972 sobre a falésia do Cabo Branco, ao lado da Ponta do Seixas, o ponto mais oriental do Brasil continental e das Américas. Por isso João Pessoa é conhecida como a cidade onde o sol nasce primeiro. O formato de três arestas do farol costuma ser associado à planta do sisal, por muito tempo importante para a economia da Paraíba.
+poi_reef_title: Recifes e piscinas naturais · Recife e João Pessoa
+poi_reef_text: Boa parte da praia de Boa Viagem, no Recife, é protegida por uma longa barreira de arrecifes, que deu nome à cidade. Na maré baixa, os recifes formam piscinas naturais de águas calmas. Em João Pessoa, barcos saem de Tambaú para os recifes do Picãozinho, que também formam piscinas naturais na maré baixa.
+poi_bridge_title: Pontes do Capibaribe · Recife
+poi_bridge_text: O Recife é cortado pelo Capibaribe e outros rios e por dezenas de canais, ligados por muitas pontes, por isso é chamado de Veneza Brasileira. A Ponte da Boa Vista, de ferro, construída em 1874, é uma das pontes históricas mais conhecidas da cidade.
+poi_jangada_title: Jangada
+poi_jangada_text: Embarcação tradicional com vela triangular, usada há gerações por pescadores no litoral do Nordeste. Hoje as jangadas também levam visitantes até os recifes e piscinas naturais, como em Porto de Galinhas.
+poi_mangrove_title: Mangue
+poi_mangrove_text: Os manguezais crescem onde o rio encontra o mar e são berçário de caranguejos e peixes. No Recife, inspiraram o Manguebeat, movimento musical dos anos 1990 liderado por Chico Science & Nação Zumbi.
+poi_beach_title: Praias e coqueiros · Tambaú e Cabo Branco
+poi_beach_text: A orla de João Pessoa mistura a animada Tambaú, com calçadão e quiosques, e o Cabo Branco, mais tranquilo e com falésias. Os coqueiros acompanham boa parte do litoral nordestino, e a água de coco gelada é um clássico da praia.
+poi_cashew_title: Cajueiro
+poi_cashew_text: O cajueiro é nativo do Nordeste brasileiro. O caju vira suco e doce, e a castanha que fica pendurada embaixo dele é torrada.
+
+# Pontos de interesse do Campus
+poi_ufpb_title: UFPB Campus IV · Rio Tinto
+poi_ufpb_text: A Universidade Federal da Paraíba criou o Campus IV, em Rio Tinto e Mamanguape, no Litoral Norte paraibano, em 2006. A Licenciatura em Ciência da Computação de lá foi a primeira oferecida por uma instituição federal no estado. Estudei lá de 2014 a 2019, participei do projeto Computação Plugada e voltei como professor de 2024 a 2025.
+poi_cin_title: CIn UFPE · Recife
+poi_cin_text: O Centro de Informática da Universidade Federal de Pernambuco, na Cidade Universitária, no Recife, é um dos principais centros de computação do Brasil, e seus três cursos de graduação estão entre os mais concorridos da UFPE. Fiz o mestrado lá (2020–2022) e hoje faço o doutorado no SPGroup, pesquisando conflitos semânticos de merge.
+poi_ifpe_title: IFPE Campus Belo Jardim
+poi_ifpe_text: No Agreste pernambucano, o campus começou como escola agrícola em 1958, virou Escola Agrotécnica Federal de Belo Jardim em 1979 e passou a fazer parte do Instituto Federal de Pernambuco em 2008. Hoje também oferece o bacharelado em Engenharia de Software. Sou professor de Engenharia de Software lá desde julho de 2026 e coordeno o projeto de extensão GirliES.
