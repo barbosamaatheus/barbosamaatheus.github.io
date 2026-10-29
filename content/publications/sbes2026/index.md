@@ -27,7 +27,7 @@ tags:
   - depth tuning
   - pointer analysis
 
-featured: true
+featured: false
 
 links:
   - type: pdf
