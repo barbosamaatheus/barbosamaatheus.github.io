@@ -40,6 +40,8 @@ sections:
       spacing:
         padding: ["2rem", 0, "1rem", 0]
   - block: markdown
+    # The Merge Lab in the game shows this block (found by its id).
+    id: research
     content:
       title: "📚 Minha Pesquisa"
       subtitle: ""

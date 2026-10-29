@@ -105,6 +105,7 @@ next_merge: Next merge
 see_score: See my score
 score: "You got {score} of {total}"
 score_text: "Semantic conflicts are the ones git can’t see: the merge looks fine, the tests might even pass, and the behavior is still wrong. My PhD is about merge tools that catch them before they reach production."
+see_papers: Read my papers
 play_again: Play again
 back_to_lab: Back to the lab
 explain_textual: Both branches changed the same line, so git stops and asks someone to choose. Annoying, but at least it’s visible.

@@ -103,6 +103,7 @@ next_merge: Próximo merge
 see_score: Ver minha pontuação
 score: "Você acertou {score} de {total}"
 score_text: "Conflitos semânticos são os que o git não vê: o merge parece certo, os testes podem até passar, e o comportamento continua errado. Meu doutorado é sobre ferramentas de merge que os detectam antes de chegarem à produção."
+see_papers: Ler meus artigos
 play_again: Jogar de novo
 back_to_lab: Voltar ao laboratório
 explain_textual: As duas branches mudaram a mesma linha, então o git para e pede que alguém escolha. Chato, mas pelo menos é visível.

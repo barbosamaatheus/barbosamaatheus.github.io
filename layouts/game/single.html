@@ -65,10 +65,10 @@
   {{- range .Sections -}}{{- $courses = $courses | append (dict "title" .Title "where" (.LinkTitle | default "") "url" .RelPermalink) -}}{{- end -}}
 {{- end -}}
 
-{{- /* The "My Research" text block on the home page feeds the Merge Lab. */ -}}
+{{- /* The home page block with `id: research` feeds the Merge Lab, in each language. */ -}}
 {{- $research := "" -}}
 {{- range site.Home.Params.sections -}}
-  {{- if eq .block "markdown" -}}{{- with .content -}}{{- if in (.title | default "") "Research" -}}{{- $research = $.RenderString (.text | default "") -}}{{- end -}}{{- end -}}{{- end -}}
+  {{- if and (eq .block "markdown") (eq .id "research") -}}{{- with .content -}}{{- $research = $.RenderString (.text | default "") -}}{{- end -}}{{- end -}}
 {{- end -}}
 
 {{- $data := dict
@@ -490,7 +490,7 @@ function renderGame(){
   if (game.round >= ROUNDS.length){
     body.innerHTML = `<p class="verdict ${game.score===3?'good':''}">${fmt(t.score, { score: game.score, total: ROUNDS.length })}</p>
       <p>${t.score_text}</p>
-      <div class="row"><button class="btn primary" type="button" data-action="play">${t.play_again}</button><button class="btn" type="button" data-action="lab">${t.back_to_lab}</button></div>`;
+      <div class="row"><button class="btn primary" type="button" data-action="papers">📚 ${t.see_papers}</button><button class="btn" type="button" data-action="play">${t.play_again}</button><button class="btn" type="button" data-action="lab">${t.back_to_lab}</button></div>`;
     body.scrollTop = 0; return;
   }
   const r = ROUNDS[game.round];
@@ -829,6 +829,8 @@ function handleAction(e){
       $('panelBody').querySelector('[data-pick]')?.focus();
     } else if (act === 'next'){ game.round++; game.picked = null; renderGame(); $('panelBody').querySelector('button')?.focus(); }
     else if (act === 'lab'){ game = null; $('panelBody').innerHTML = byId.lab.html; $('panelBody').scrollTop = 0; }
+    // After the mini-game, walk the visitor to the Library to read the papers.
+    else if (act === 'papers'){ if (!$('classic').hidden) closeClassic(); teleport(byId.library); }
   } else if (pk && game && !game.picked){
     game.picked = pk.dataset.pick;
     if (game.picked === ROUNDS[game.round].answer) game.score++;
