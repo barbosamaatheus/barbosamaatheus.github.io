@@ -1,0 +1,112 @@
+# Interface text for Merge Village (layouts/game/single.html).
+# Each language has its own file with the same keys; missing keys fall back to English.
+# Use {name} placeholders where the game fills in values.
+canvas_label: A small pixel village laid out like a git history. Use the Places button or the list view to reach every section with a keyboard or screen reader.
+places: Places
+places_sub: Jump straight to any building
+list_view: List view
+website: Website
+back_to_website: Back to the website
+back_to_village: Back to the village
+zoom: Zoom
+zoom_in: Zoom in
+zoom_out: Zoom out
+zoom_fit: Show the whole map
+close: Close
+visit_history: Your visit history
+progress: "{n} of {total} visited"
+visited: visited
+intro_tagline: I study merge conflicts that git can’t see.
+intro_text: My work lives in a small village drawn like a git history. Walk around and step into the buildings.
+legend_main: "main road: about me, talks, research and contact"
+legend_academia: "feature/academia: education and papers"
+legend_industry: "feature/career: experience and projects"
+start: Start walking
+controls_touch: Tap anywhere to walk, and tap a building to go in.
+controls_keys: Arrow keys or WASD to walk, E to enter. You can also click anywhere to walk there.
+hint_touch: Tap anywhere to walk. Tap a building to go in.
+hint_keys: Walk with the arrow keys or WASD. Press <kbd>E</kbd> at a door.
+done_title: All branches merged
+done_text: You’ve been in every building. Thanks for walking around.
+done_contact_text: If you’d like to collaborate, my contacts are at the post office.
+open_contacts: Open contacts
+keep_exploring: Keep exploring
+log_init: "init: arrive in the village"
+log_explore: "explore: {place}"
+on_branch: "{title} on {branch}"
+fork_academia: academia
+fork_academia_sub: education & papers
+fork_industry: career
+fork_industry_sub: experience & projects
+
+date_format: January 2006
+
+# Buildings
+home_name: Home
+home_title: About me
+home_prompt: Go inside
+university_name: University
+university_title: Education
+university_prompt: Enter the university
+library_name: Library
+library_title: Papers
+library_prompt: Enter the library
+stage_name: Stage
+stage_title: Events and talks
+stage_prompt: Visit the stage
+office_name: Office
+office_title: Experience
+office_prompt: Enter the office
+workshop_name: Makerspace
+workshop_title: Projects
+workshop_prompt: Enter the makerspace
+lab_name: Merge Lab
+lab_title: Research
+lab_prompt: Enter the merge lab
+post_name: Post office
+post_title: Contact
+post_prompt: Enter the post office
+
+# Building content
+languages: Languages
+lang_native: native
+lang_advanced: advanced
+lang_intermediate: intermediate
+lang_basic: basic
+village_note: The village is drawn like a git history. The gold road is main. The pink and blue roads are feature branches that split off and merge back just before the Merge Lab.
+date_range: "{start} to {end}"
+present: present
+read_more: Read more
+see_publications: See every publication
+see_events: See every event
+see_projects: See every project
+courses_taught: Courses taught
+interests: Interests
+try_it: Try it yourself
+try_it_text: Three merges, three possible outcomes. Can you tell which one git gets wrong?
+play: "Play: spot the conflict"
+contact_lead: Please reach out if you’d like to collaborate.
+email: E-mail
+full_cv: Full academic CV
+
+# Mini-game
+round: "Merge {n} of {total}"
+base: Base
+left_branch: Left branch
+right_branch: Right branch
+question: What happens when these two branches merge?
+opt_clean: "Clean merge: works as both developers intended"
+opt_textual: "Textual conflict: git stops and asks for help"
+opt_semantic: "Semantic conflict: git merges it, but the behavior breaks"
+correct: Correct
+not_quite: Not quite
+git_produces: What git produces
+next_merge: Next merge
+see_score: See my score
+score: "You got {score} of {total}"
+score_text: "Semantic conflicts are the ones git can’t see: the merge looks fine, the tests might even pass, and the behavior is still wrong. My PhD is about merge tools that catch them before they reach production."
+play_again: Play again
+back_to_lab: Back to the lab
+explain_textual: Both branches changed the same line, so git stops and asks someone to choose. Annoying, but at least it’s visible.
+explain_clean: The edits touch different methods that share no state. Git merges them and the program does what both developers expect.
+explain_semantic: Git merges this without a warning, but the right branch’s assignment overwrites the left branch’s discount, so customers never get it. This is an overriding assignment interference, the kind of conflict my research detects with static analysis.

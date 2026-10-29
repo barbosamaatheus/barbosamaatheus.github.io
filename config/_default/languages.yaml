@@ -1,22 +1,22 @@
 # Languages
 #   Create a section for each of your site's languages.
 #   Documentation: https://docs.hugoblox.com/reference/language/
+#
+#   English is the default and lives in `content/`.
+#   Portuguese lives in `content-pt/`, which only needs the pages you want to
+#   translate: any page missing there is shown in English (see module.yaml).
 
 # Default language
 en:
   languageCode: en-us
-  # Uncomment for multi-lingual sites, and move English content into `en` sub-folder.
-  #contentDir: content/en
+  languageName: English
+  weight: 1
 
-# Uncomment the lines below to configure your website in a second language.
-#zh:
-#  languageCode: zh-Hans
-#  contentDir: content/zh
-#  title: Chinese website title...
-#  params:
-#    description: Site description in Chinese...
-#  menu:
-#    main:
-#      - name: 传
-#        url: '#about'
-#        weight: 1
+pt:
+  languageCode: pt-BR
+  languageName: Português
+  weight: 2
+  title: Matheus Barbosa | Professor e Doutorando
+  params:
+    locale:
+      date_format: '2 Jan 2006'

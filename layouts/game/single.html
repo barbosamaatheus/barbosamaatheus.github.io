@@ -2,7 +2,9 @@
      All content is read from the regular site folders at build time, so updating
      content/ updates both the classic site and the village. */ -}}
 {{- $author := site.GetPage "authors/admin" -}}
-{{- $fmt := "January 2006" -}}
+{{- /* Interface text lives in data/game_i18n/<lang>.yaml; missing keys fall back to English. */ -}}
+{{- $L := merge (index site.Data.game_i18n "en") (index site.Data.game_i18n site.Language.Lang | default dict) -}}
+{{- $fmt := $L.date_format -}}
 
 {{- $profiles := slice -}}
 {{- range $author.Params.profiles -}}
@@ -11,15 +13,15 @@
 
 {{- $education := slice -}}
 {{- range $author.Params.education -}}
-  {{- $end := "" -}}{{- with .date_end -}}{{- $end = (time .).Format $fmt -}}{{- end -}}
+  {{- $end := "" -}}{{- with .date_end -}}{{- $end = time.Format $fmt . -}}{{- end -}}
   {{- $btn := dict -}}{{- with .button -}}{{- $btn = dict "text" .text "url" .url -}}{{- end -}}
-  {{- $education = $education | append (dict "area" .area "institution" .institution "summary" (.summary | default "" | plainify | strings.TrimSpace) "start" ((time .date_start).Format $fmt) "end" $end "button" $btn) -}}
+  {{- $education = $education | append (dict "area" .area "institution" .institution "summary" (.summary | default "" | plainify | strings.TrimSpace) "start" (time.Format $fmt .date_start) "end" $end "button" $btn) -}}
 {{- end -}}
 
 {{- $work := slice -}}
 {{- range $author.Params.work -}}
-  {{- $end := "" -}}{{- with .date_end -}}{{- $end = (time .).Format $fmt -}}{{- end -}}
-  {{- $work = $work | append (dict "position" .position "company" .company_name "start" ((time .date_start).Format $fmt) "end" $end "summary" (.summary | default "" | plainify | strings.TrimSpace)) -}}
+  {{- $end := "" -}}{{- with .date_end -}}{{- $end = time.Format $fmt . -}}{{- end -}}
+  {{- $work = $work | append (dict "position" .position "company" .company_name "start" (time.Format $fmt .date_start) "end" $end "summary" (.summary | default "" | plainify | strings.TrimSpace)) -}}
 {{- end -}}
 
 {{- $skills := slice -}}
@@ -46,7 +48,8 @@
 {{- end -}}
 
 {{- $projects := slice -}}
-{{- range (where site.RegularPages "Section" "projects").ByWeight -}}
+{{- /* Same order as the projects page: weightless first, weighted (hobby) last. */ -}}
+{{- range sort (where site.RegularPages "Section" "projects") "Weight" "asc" -}}
   {{- $projects = $projects | append (dict "title" .Title "summary" (.Summary | plainify | strings.TrimSpace | truncate 220) "url" .RelPermalink) -}}
 {{- end -}}
 
@@ -54,7 +57,7 @@
 {{- range (where site.RegularPages "Section" "events").ByDate.Reverse -}}
   {{- $place := slice -}}
   {{- with .Params.address -}}{{- with .city -}}{{ $place = $place | append . }}{{- end -}}{{- with .country -}}{{ $place = $place | append . }}{{- end -}}{{- end -}}
-  {{- $events = $events | append (dict "title" .Title "summary" (.Params.summary | default "" | plainify) "date" (.Date.Format $fmt) "place" (delimit $place ", ") "url" .RelPermalink) -}}
+  {{- $events = $events | append (dict "title" .Title "summary" (.Params.summary | default "" | plainify) "date" (time.Format $fmt .Date) "place" (delimit $place ", ") "url" .RelPermalink) -}}
 {{- end -}}
 
 {{- $courses := slice -}}
@@ -84,10 +87,12 @@
     "projects" $projects
     "events" $events
     "courses" $courses
-    "links" (dict "home" ("" | relURL) "publications" ("publications/" | relURL) "events" ("events/" | relURL) "projects" ("projects/" | relURL))
+    "links" (dict "home" ("" | relLangURL) "publications" ("publications/" | relLangURL) "events" ("events/" | relLangURL) "projects" ("projects/" | relLangURL))
+    "lang" site.Language.Lang
+    "t" $L
 -}}
 <!doctype html>
-<html lang="en">
+<html lang="{{ site.Language.LanguageCode | default site.Language.Lang }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -166,6 +171,8 @@ kbd{font-family:var(--pixel);font-size:.85em;border:2px solid currentColor;paddi
 
 .hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);padding:8px 14px;font-size:14px;z-index:4;max-width:calc(100% - 24px);text-align:center;transition:opacity .4s}
 .hint.gone{opacity:0;pointer-events:none}
+.zoom{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;flex-direction:column;gap:8px;z-index:4}
+.zoom .btn{width:42px;height:42px;padding:0;font-size:20px;display:grid;place-items:center}
 body:has(.prompt:not([hidden])) .hint{opacity:0;pointer-events:none}
 
 .prompt{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:6;font-size:17px;padding:10px 16px}
@@ -199,7 +206,7 @@ body:has(.prompt:not([hidden])) .hint{opacity:0;pointer-events:none}
 .timeline.ind li::before{border-color:var(--industry)}
 .timeline strong{display:block}
 .contacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 4px}
-.contacts a{display:block;text-decoration:none;color:var(--ink);padding:10px 12px}
+.contacts a{display:block;text-decoration:none;color:var(--ink);padding:10px 12px;min-width:0;overflow-wrap:anywhere}
 .contacts a span{display:block;font-size:13px;color:var(--muted)}
 .contacts a strong{font-family:var(--pixel);font-size:16px}
 
@@ -274,7 +281,7 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
 </style>
 </head>
 <body>
-<canvas id="world" tabindex="0" role="img" aria-label="A small pixel village laid out like a git history. Use the Places button or the classic view to reach every section with a keyboard or screen reader."></canvas>
+<canvas id="world" tabindex="0" role="img" aria-label="{{ $L.canvas_label }}"></canvas>
 
 <div class="hud">
   <div class="who box">
@@ -282,18 +289,26 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
     <p id="whoRole"></p>
   </div>
   <div class="hud-actions">
-    <div class="progress box" id="progress" aria-live="polite"><span id="progressText">0 of 8 visited</span><span class="pips" id="pips" aria-hidden="true"></span></div>
-    <button class="btn small" id="placesBtn" type="button">Places</button>
-    <button class="btn small" id="classicBtn" type="button">List view</button>
-    <a class="btn small" id="siteLink" href="#">Website</a>
+    <div class="progress box" id="progress" aria-live="polite"><span id="progressText"></span><span class="pips" id="pips" aria-hidden="true"></span></div>
+    <button class="btn small" id="placesBtn" type="button">{{ $L.places }}</button>
+    <button class="btn small" id="classicBtn" type="button">{{ $L.list_view }}</button>
+    <a class="btn small" id="siteLink" href="#">{{ $L.website }}</a>
+    {{- range .Translations }}
+    <a class="btn small" href="{{ .RelPermalink }}" hreflang="{{ .Lang }}" lang="{{ .Lang }}" title="{{ .Language.LanguageName }}">{{ upper .Lang }}</a>
+    {{- end }}
   </div>
 </div>
 
-<aside class="gitlog box" aria-label="Your visit history">
+<aside class="gitlog box" aria-label="{{ $L.visit_history }}">
   <h2>git log</h2>
   <ol id="log"></ol>
 </aside>
 
+<div class="zoom" role="group" aria-label="{{ $L.zoom }}">
+  <button class="btn" id="zoomIn" type="button" aria-label="{{ $L.zoom_in }}" title="{{ $L.zoom_in }} (+)">+</button>
+  <button class="btn" id="zoomOut" type="button" aria-label="{{ $L.zoom_out }}" title="{{ $L.zoom_out }} (−)">−</button>
+  <button class="btn" id="zoomFit" type="button" aria-label="{{ $L.zoom_fit }}" title="{{ $L.zoom_fit }} (0)">⤢</button>
+</div>
 <div class="hint box" id="hint"></div>
 <button class="btn prompt" id="prompt" type="button" hidden></button>
 
@@ -304,7 +319,7 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
       <h2 id="panelTitle"></h2>
       <div class="sub"><span class="swatch" id="panelSwatch"></span><span id="panelSub"></span></div>
     </div>
-    <button class="btn small close" id="panelClose" type="button">Close<kbd>Esc</kbd></button>
+    <button class="btn small close" id="panelClose" type="button">{{ $L.close }}<kbd>Esc</kbd></button>
   </header>
   <div class="body" id="panelBody"></div>
 </section>
@@ -313,10 +328,10 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
   <header>
     <span class="emoji" aria-hidden="true">🗺️</span>
     <div>
-      <h2 id="placesTitle">Places</h2>
-      <div class="sub">Jump straight to any building</div>
+      <h2 id="placesTitle">{{ $L.places }}</h2>
+      <div class="sub">{{ $L.places_sub }}</div>
     </div>
-    <button class="btn small close" id="placesClose" type="button">Close<kbd>Esc</kbd></button>
+    <button class="btn small close" id="placesClose" type="button">{{ $L.close }}<kbd>Esc</kbd></button>
   </header>
   <div class="body"><ul class="places" id="placesList"></ul></div>
 </section>
@@ -325,29 +340,29 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
   <div class="card box" role="dialog" aria-labelledby="introTitle">
     <h1 id="introTitle"></h1>
     <p class="role" id="introRole"></p>
-    <p>My work lives in a small village drawn like a git history. Walk around and step into the buildings.</p>
+    <p>{{ $L.intro_text }}</p>
     <div class="legend">
-      <span><i style="background:var(--main)"></i>main road: about me, talks, research and contact</span>
-      <span><i style="background:var(--academia)"></i>feature/academia: education and papers</span>
-      <span><i style="background:var(--industry)"></i>feature/industry: experience and projects</span>
+      <span><i style="background:var(--main)"></i>{{ $L.legend_main }}</span>
+      <span><i style="background:var(--academia)"></i>{{ $L.legend_academia }}</span>
+      <span><i style="background:var(--industry)"></i>{{ $L.legend_industry }}</span>
     </div>
     <p class="controls" id="introControls"></p>
     <div class="row">
-      <button class="btn primary" id="startBtn" type="button">Start walking</button>
-      <button class="btn" id="introClassic" type="button">List view</button>
-      <a class="btn" id="introSite" href="#">Back to the website</a>
+      <button class="btn primary" id="startBtn" type="button">{{ $L.start }}</button>
+      <button class="btn" id="introClassic" type="button">{{ $L.list_view }}</button>
+      <a class="btn" id="introSite" href="#">{{ $L.back_to_website }}</a>
     </div>
   </div>
 </div>
 
 <div class="scrim" id="done" hidden>
   <div class="card box" role="dialog" aria-labelledby="doneTitle">
-    <h1 id="doneTitle">All branches merged</h1>
-    <p>You’ve been in every building. Thanks for walking around.</p>
-    <p>If you’d like to collaborate, my contacts are at the post office.</p>
+    <h1 id="doneTitle">{{ $L.done_title }}</h1>
+    <p>{{ $L.done_text }}</p>
+    <p>{{ $L.done_contact_text }}</p>
     <div class="row">
-      <button class="btn primary" id="doneContact" type="button">Open contacts</button>
-      <button class="btn" id="doneClose" type="button">Keep exploring</button>
+      <button class="btn primary" id="doneContact" type="button">{{ $L.open_contacts }}</button>
+      <button class="btn" id="doneClose" type="button">{{ $L.keep_exploring }}</button>
     </div>
   </div>
 </div>
@@ -357,8 +372,8 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
     <div class="classic-top">
       <h1 id="classicName"></h1>
       <span class="row" style="margin:0">
-        <a class="btn small" id="classicSite" href="#">Website</a>
-        <button class="btn small" id="classicBack" type="button">Back to the village</button>
+        <a class="btn small" id="classicSite" href="#">{{ $L.website }}</a>
+        <button class="btn small" id="classicBack" type="button">{{ $L.back_to_village }}</button>
       </span>
     </div>
     <div id="classicBody"></div>
@@ -371,67 +386,69 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
 'use strict';
 const T = 32, W = 44, H = 20, SPEED = 150;
 const DATA = JSON.parse(document.getElementById('site-data').textContent);
+const t = DATA.t;
+const fmt = (str, vars) => String(str).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const ext = (href, text) => `<a href="${esc(href)}" target="_blank" rel="noopener">${text}</a>`;
 // Internal pages open in the same tab; anything else in a new one.
 const lnk = (href, text) => /^(https?:|mailto:)/.test(href) ? ext(href, text) : `<a href="${esc(href)}">${text}</a>`;
-const span = (a, b) => `${esc(a)} to ${b ? esc(b) : 'present'}`;
+const span = (a, b) => fmt(t.date_range, { start: esc(a), end: b ? esc(b) : t.present });
 
 /* ---------- Content (built from the site folders) ---------- */
-const level = p => p >= 100 ? 'native' : p >= 80 ? 'advanced' : p >= 50 ? 'intermediate' : 'basic';
+const level = p => p >= 100 ? t.lang_native : p >= 80 ? t.lang_advanced : p >= 50 ? t.lang_intermediate : t.lang_basic;
 const PROFILE_NAMES = { 'brands/github':'GitHub', 'brands/cv':'Lattes CV', 'brands/linkedin':'LinkedIn', 'academicons/orcid':'ORCID' };
 function contactCard(p){
   if (p.url.startsWith('mailto:')){
     const where = (p.label.match(/\(([^)]+)\)/) || [])[1];
-    return `<a class="box" href="${esc(p.url)}"><strong>E-mail${where ? ' · ' + esc(where) : ''}</strong><span>${esc(p.url.slice(7))}</span></a>`;
+    return `<a class="box" href="${esc(p.url)}"><strong>${t.email}${where ? ' · ' + esc(where) : ''}</strong><span>${esc(p.url.slice(7))}</span></a>`;
   }
   const name = PROFILE_NAMES[p.icon] || p.label || new URL(p.url).hostname;
   const tail = p.url.replace(/\/+$/, '').split('/').pop();
-  const sub = p.icon === 'brands/cv' ? 'Full academic CV' : p.icon === 'brands/linkedin' ? DATA.name : tail;
+  const sub = p.icon === 'brands/cv' ? t.full_cv : p.icon === 'brands/linkedin' ? DATA.name : tail;
   return `<a class="box" href="${esc(p.url)}" target="_blank" rel="noopener"><strong>${esc(name)}</strong><span>${esc(sub)}</span></a>`;
 }
 const HTML = {
   home: () => `${DATA.bio}
     <p class="meta">${esc(DATA.role)}</p>
     ${DATA.skills.map(g => `<h3>${esc(g.name)}</h3><ul class="chips">${g.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>`).join('')}
-    ${DATA.languages.length ? `<h3>Languages</h3><p>${DATA.languages.map(l => `${esc(l.name)} (${level(l.percent)})`).join(', ')}.</p>` : ''}
-    <p class="note">The village is drawn like a git history. The gold road is main. The pink and blue roads are feature branches that split off and merge back just before the Merge Lab.</p>`,
+    ${DATA.languages.length ? `<h3>${t.languages}</h3><p>${DATA.languages.map(l => `${esc(l.name)} (${level(l.percent)})`).join(', ')}.</p>` : ''}
+    <p class="note">${t.village_note}</p>`,
   university: () => `<ol class="timeline">${DATA.education.map(e => `
     <li><strong>${esc(e.area)}</strong>${esc(e.institution)}, ${span(e.start, e.end)}
       ${e.summary ? `<span class="meta">${esc(e.summary)}</span>` : ''}
-      ${e.button && e.button.url ? `<span class="meta">${lnk(e.button.url, esc(e.button.text || 'Read more'))}</span>` : ''}</li>`).join('')}</ol>`,
+      ${e.button && e.button.url ? `<span class="meta">${lnk(e.button.url, esc(e.button.text || t.read_more))}</span>` : ''}</li>`).join('')}</ol>`,
   library: () => `<ul class="plain">${DATA.publications.map(p => `
     <li>${lnk(p.url, esc(p.title))}<span class="meta">${p.authors.map(esc).join(', ')}. ${p.venue ? esc(p.venue) + ', ' : ''}${esc(p.year)}.</span></li>`).join('')}</ul>
-    <p>${lnk(DATA.links.publications, 'See every publication')}</p>`,
+    <p>${lnk(DATA.links.publications, t.see_publications)}</p>`,
   stage: () => `<ul class="plain">${DATA.events.map(e => `
     <li>${lnk(e.url, esc(e.title))}<span class="meta">${esc(e.date)}${e.place ? ' · ' + esc(e.place) : ''}${e.summary ? '. ' + esc(e.summary) : ''}</span></li>`).join('')}</ul>
-    <p>${lnk(DATA.links.events, 'See every event')}</p>`,
+    <p>${lnk(DATA.links.events, t.see_events)}</p>`,
   office: () => `<ol class="timeline ind">${DATA.work.map(w => `
     <li><strong>${esc(w.position)}</strong>${esc(w.company)}, ${span(w.start, w.end)}${w.summary ? `<span class="meta">${esc(w.summary)}</span>` : ''}</li>`).join('')}</ol>
-    ${DATA.courses.length ? `<h3>Courses taught</h3><ul class="plain">${DATA.courses.map(c => `<li>${lnk(c.url, esc(c.title))}<span class="meta">${esc(c.where)}</span></li>`).join('')}</ul>` : ''}`,
+    ${DATA.courses.length ? `<h3>${t.courses_taught}</h3><ul class="plain">${DATA.courses.map(c => `<li>${lnk(c.url, esc(c.title))}<span class="meta">${esc(c.where)}</span></li>`).join('')}</ul>` : ''}`,
   workshop: () => `<ul class="plain">${DATA.projects.map(p => `
     <li>${lnk(p.url, esc(p.title))}<span class="meta">${esc(p.summary)}</span></li>`).join('')}</ul>
-    <p>${lnk(DATA.links.projects, 'See every project')}</p>`,
+    <p>${lnk(DATA.links.projects, t.see_projects)}</p>`,
   lab: () => `${DATA.research}
-    <h3>Interests</h3><ul class="chips">${DATA.interests.map(i => `<li>${esc(i)}</li>`).join('')}</ul>
-    <h3>Try it yourself</h3><p>Three merges, three possible outcomes. Can you tell which one git gets wrong?</p>
-    <div class="row"><button class="btn primary" type="button" data-action="play">Play: spot the conflict</button></div>`,
-  post: () => `<p class="lead">Please reach out if you’d like to collaborate.</p>
+    <h3>${t.interests}</h3><ul class="chips">${DATA.interests.map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+    <h3>${t.try_it}</h3><p>${t.try_it_text}</p>
+    <div class="row"><button class="btn primary" type="button" data-action="play">${t.play}</button></div>`,
+  post: () => `<p class="lead">${t.contact_lead}</p>
     <div class="contacts">${DATA.profiles.map(contactCard).join('')}</div>`,
 };
 const PLACES = [
-  { id:'home', name:'Home', title:'About me', emoji:'🏠', branch:'main', rect:[3,7,3,3], roof:'#c95b4a', prompt:'Go inside' },
-  { id:'university', name:'University', title:'Education', emoji:'🎓', branch:'academia', rect:[11,2,3,3], roof:'#8a4fb0', prompt:'Enter the university' },
-  { id:'library', name:'Library', title:'Papers', emoji:'📚', branch:'academia', rect:[19,2,3,3], roof:'#b0476e', prompt:'Enter the library' },
-  { id:'stage', name:'Stage', title:'Events and talks', emoji:'🎤', branch:'main', rect:[15,7,3,3], roof:'#d9922a', prompt:'Visit the stage' },
-  { id:'office', name:'Office', title:'Experience', emoji:'💼', branch:'industry', rect:[14,12,3,3], roof:'#3a6fa8', prompt:'Enter the office' },
-  { id:'workshop', name:'Workshop', title:'Projects', emoji:'🛠️', branch:'industry', rect:[20,12,3,3], roof:'#3f8a83', prompt:'Enter the workshop' },
-  { id:'lab', name:'Merge Lab', title:'Research', emoji:'🔬', branch:'main', rect:[32,7,3,3], roof:'#2f8f62', prompt:'Enter the merge lab' },
-  { id:'post', name:'Post office', title:'Contact', emoji:'📮', branch:'main', rect:[37,7,3,3], roof:'#c23c33', prompt:'Enter the post office' },
+  { id:'home', name:t.home_name, title:t.home_title, emoji:'🏠', branch:'main', rect:[3,7,3,3], roof:'#c95b4a', prompt:t.home_prompt },
+  { id:'university', name:t.university_name, title:t.university_title, emoji:'🎓', branch:'academia', rect:[11,2,3,3], roof:'#8a4fb0', prompt:t.university_prompt },
+  { id:'library', name:t.library_name, title:t.library_title, emoji:'📚', branch:'academia', rect:[19,2,3,3], roof:'#b0476e', prompt:t.library_prompt },
+  { id:'stage', name:t.stage_name, title:t.stage_title, emoji:'🎤', branch:'main', rect:[15,7,3,3], roof:'#d9922a', prompt:t.stage_prompt },
+  { id:'office', name:t.office_name, title:t.office_title, emoji:'💼', branch:'industry', rect:[14,12,3,3], roof:'#3a6fa8', prompt:t.office_prompt },
+  { id:'workshop', name:t.workshop_name, title:t.workshop_title, emoji:'🛠️', branch:'industry', rect:[20,12,3,3], roof:'#3f8a83', prompt:t.workshop_prompt },
+  { id:'lab', name:t.lab_name, title:t.lab_title, emoji:'🔬', branch:'main', rect:[32,7,3,3], roof:'#2f8f62', prompt:t.lab_prompt },
+  { id:'post', name:t.post_name, title:t.post_title, emoji:'📮', branch:'main', rect:[37,7,3,3], roof:'#c23c33', prompt:t.post_prompt },
 ];
 PLACES.forEach(p => { p.html = HTML[p.id](); });
 const ORDER_CLASSIC = ['home','lab','library','university','office','workshop','stage','post'];
-const BRANCH_NAME = { main:'main', academia:'feature/academia', industry:'feature/industry' };
+const BRANCH_NAME = { main:'main', academia:'feature/academia', industry:'feature/career' };
 PLACES.forEach(p => {
   const [x,y,w,h] = p.rect;
   p.door = [x + Math.floor(w/2), y + h - 1];
@@ -447,44 +464,44 @@ const ROUNDS = [
     right:['class Config {',['R','  int timeout = 10;'],'}'],
     merged:['class Config {',['C','<<<<<<< left'],['L','  int timeout = 60;'],['C','======='],['R','  int timeout = 10;'],['C','>>>>>>> right'],'}'],
     answer:'textual',
-    explain:'Both branches changed the same line, so git stops and asks someone to choose. Annoying, but at least it’s visible.' },
+    explain:t.explain_textual },
   { base:['String greet(String n) {','  return "Hi " + n;','}','','int count(List<Item> xs) {','  return xs.size();','}'],
     left:['String greet(String n) {',['L','  return "Hello, " + n;'],'}','','int count(List<Item> xs) {','  return xs.size();','}'],
     right:['String greet(String n) {','  return "Hi " + n;','}','','int count(List<Item> xs) {',['R','  return xs == null ? 0 : xs.size();'],'}'],
     merged:['String greet(String n) {',['L','  return "Hello, " + n;'],'}','','int count(List<Item> xs) {',['R','  return xs == null ? 0 : xs.size();'],'}'],
     answer:'clean',
-    explain:'The edits touch different methods that share no state. Git merges them and the program does what both developers expect.' },
+    explain:t.explain_clean },
   { base:['void checkout(Cart c) {','  total = c.sum();','  validate(c);','  log(c);','  print(total);','}'],
     left:['void checkout(Cart c) {','  total = c.sum();',['L','  total = applyDiscount(total);'],'  validate(c);','  log(c);','  print(total);','}'],
     right:['void checkout(Cart c) {','  total = c.sum();','  validate(c);','  log(c);',['R','  total = c.sum() + shipping;'],'  print(total);','}'],
     merged:['void checkout(Cart c) {','  total = c.sum();',['L','  total = applyDiscount(total);'],'  validate(c);','  log(c);',['R','  total = c.sum() + shipping;'],'  print(total);','}'],
     answer:'semantic',
-    explain:'Git merges this without a warning, but the right branch’s assignment overwrites the left branch’s discount, so customers never get it. This is an overriding assignment interference, the kind of conflict my research detects with static analysis.' },
+    explain:t.explain_semantic },
 ];
 const OPTIONS = [
-  ['clean','Clean merge: works as both developers intended'],
-  ['textual','Textual conflict: git stops and asks for help'],
-  ['semantic','Semantic conflict: git merges it, but the behavior breaks'],
+  ['clean',t.opt_clean],
+  ['textual',t.opt_textual],
+  ['semantic',t.opt_semantic],
 ];
 const codeBlock = lines => `<pre class="code">${lines.map(l => Array.isArray(l) ? `<span class="${l[0]}">${esc(l[1]) || ' '}</span>` : `<span>${esc(l) || ' '}</span>`).join('')}</pre>`;
 let game = null;
 function renderGame(){
   const body = document.getElementById('panelBody');
   if (game.round >= ROUNDS.length){
-    body.innerHTML = `<p class="verdict ${game.score===3?'good':''}">You got ${game.score} of 3</p>
-      <p>Semantic conflicts are the ones git can’t see: the merge looks fine, the tests might even pass, and the behavior is still wrong. My PhD is about merge tools that catch them before they reach production.</p>
-      <div class="row"><button class="btn primary" type="button" data-action="play">Play again</button><button class="btn" type="button" data-action="lab">Back to the lab</button></div>`;
+    body.innerHTML = `<p class="verdict ${game.score===3?'good':''}">${fmt(t.score, { score: game.score, total: ROUNDS.length })}</p>
+      <p>${t.score_text}</p>
+      <div class="row"><button class="btn primary" type="button" data-action="play">${t.play_again}</button><button class="btn" type="button" data-action="lab">${t.back_to_lab}</button></div>`;
     body.scrollTop = 0; return;
   }
   const r = ROUNDS[game.round];
   const sw = c => `<span class="swatch" style="background:var(${c})"></span>`;
-  let html = `<p class="round-tag">Merge ${game.round+1} of 3</p>
+  let html = `<p class="round-tag">${fmt(t.round, { n: game.round+1, total: ROUNDS.length })}</p>
     <div class="code-grid">
-      <div class="code-card"><h4>Base</h4>${codeBlock(r.base)}</div>
-      <div class="code-card"><h4>${sw('--academia')}Left branch</h4>${codeBlock(r.left)}</div>
-      <div class="code-card"><h4>${sw('--industry')}Right branch</h4>${codeBlock(r.right)}</div>
+      <div class="code-card"><h4>${t.base}</h4>${codeBlock(r.base)}</div>
+      <div class="code-card"><h4>${sw('--academia')}${t.left_branch}</h4>${codeBlock(r.left)}</div>
+      <div class="code-card"><h4>${sw('--industry')}${t.right_branch}</h4>${codeBlock(r.right)}</div>
     </div>
-    <p><strong>What happens when these two branches merge?</strong></p>
+    <p><strong>${t.question}</strong></p>
     <div class="answers">${OPTIONS.map(([k,t]) => {
       let cls = '';
       if (game.picked){ if (k===r.answer) cls=' right'; else if (k===game.picked) cls=' wrong'; }
@@ -492,10 +509,10 @@ function renderGame(){
     }).join('')}</div>`;
   if (game.picked){
     const ok = game.picked === r.answer;
-    html += `<p class="verdict ${ok?'good':'bad'}">${ok?'Correct':'Not quite'}</p>
+    html += `<p class="verdict ${ok?'good':'bad'}">${ok?t.correct:t.not_quite}</p>
       <p>${r.explain}</p>
-      <div class="code-card"><h4>What git produces</h4>${codeBlock(r.merged)}</div>
-      <div class="row"><button class="btn primary" type="button" data-action="next">${game.round===ROUNDS.length-1?'See my score':'Next merge'}</button></div>`;
+      <div class="code-card"><h4>${t.git_produces}</h4>${codeBlock(r.merged)}</div>
+      <div class="row"><button class="btn primary" type="button" data-action="next">${game.round===ROUNDS.length-1?t.see_score:t.next_merge}</button></div>`;
   }
   body.innerHTML = html;
   if (!game.picked) body.scrollTop = 0;
@@ -561,18 +578,30 @@ function shade(hex, amt){
 
 /* ---------- Canvas setup ---------- */
 const cvs = document.getElementById('world'), ctx = cvs.getContext('2d');
-let off = null, R = 1, zoom = 1, dpr = 1, vw = 0, vh = 0;
+let off = null, R = 1, zoom = 1, baseZoom = 1, userZoom = 1, dpr = 1, vw = 0, vh = 0;
 const cam = { x:0, y:0 };
 function resize(){
   vw = innerWidth; vh = innerHeight;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
-  zoom = Math.max(.8, Math.min(2, Math.min(vw/(13*T), vh/(9*T))));
+  baseZoom = Math.max(.8, Math.min(2, Math.min(vw/(13*T), vh/(9*T))));
   // On tall phone screens, zoom in until the village fills the height.
-  zoom = Math.min(2, Math.max(zoom, vh/(H*T)));
-  R = Math.min(zoom*dpr, 3.2);
+  baseZoom = Math.min(2, Math.max(baseZoom, vh/(H*T)));
   cvs.width = Math.round(vw*dpr); cvs.height = Math.round(vh*dpr);
-  buildWorld();
+  applyZoom(true);
 }
+// The smallest zoom shows the whole village; the largest is a close-up.
+const fitZoom = () => Math.min(vw/(W*T), vh/(H*T));
+function applyZoom(force){
+  const minZ = fitZoom(), maxZ = 3;
+  zoom = Math.max(minZ, Math.min(maxZ, baseZoom*userZoom));
+  userZoom = zoom / baseZoom;
+  const nextR = Math.min(zoom*dpr, 3.2);
+  // Redraw the village at the new scale so pixels stay crisp.
+  if (force || Math.abs(nextR - R) > .01){ R = nextR; buildWorld(); }
+  $('zoomFit').setAttribute('aria-pressed', zoom <= minZ + 1e-3 ? 'true' : 'false');
+}
+function zoomBy(f){ userZoom *= f; applyZoom(); }
+function zoomFit(){ userZoom = zoom <= fitZoom() + 1e-3 ? 1 : fitZoom() / baseZoom; applyZoom(); }
 function buildWorld(){
   readTheme();
   off = document.createElement('canvas');
@@ -632,15 +661,15 @@ function buildWorld(){
   const label = (txt, x, y, col) => { o.lineJoin = 'round'; o.lineWidth = 4; o.strokeStyle = pal.outline; o.strokeText(txt, x, y); o.fillStyle = col; o.fillText(txt, x, y); };
   label('main', 5.4*T, 12.55*T, BC.main);
   label('feature/academia', 26*T, 5.5*T, BC.academia);
-  label('feature/industry', 18*T, 17.6*T, BC.industry);
+  label(BRANCH_NAME.industry, 18*T, 17.6*T, BC.industry);
   // At each fork, say what the branch holds instead of just "branch".
-  label('academia', 8.5*T, 12.55*T, BC.academia);
+  label(t.fork_academia, 8.5*T, 12.55*T, BC.academia);
   label('merge', 30.5*T, 12.55*T, '#ffffff');
-  label('industry', 11.5*T, 9.9*T, BC.industry);
+  label(t.fork_industry, 11.5*T, 9.9*T, BC.industry);
   label('merge', 26.5*T, 10.45*T, '#ffffff');
   o.font = '500 10px "Pixelify Sans", monospace';
-  label('education & papers', 8.5*T, 13.1*T, '#ffffff');
-  label('experience & projects', 11.5*T, 10.45*T, '#ffffff');
+  label(t.fork_academia_sub, 8.5*T, 13.1*T, '#ffffff');
+  label(t.fork_industry_sub, 11.5*T, 10.45*T, '#ffffff');
   // buildings
   PLACES.forEach(p => drawBuilding(o, p));
 }
@@ -724,7 +753,7 @@ function drawPlayer(c){
 
 /* ---------- State ---------- */
 let visited = new Set();
-let log = [{ h:'a3f1c09', m:'init: arrive in the village' }];
+let log = [{ h:'a3f1c09', id:'init' }];
 try {
   const saved = JSON.parse(localStorage.getItem('mergeVillage') || 'null');
   if (saved && Array.isArray(saved.v)) { visited = new Set(saved.v.filter(id => byId[id])); if (Array.isArray(saved.log)) log = saved.log.slice(0,12); }
@@ -737,14 +766,15 @@ const coarse = matchMedia('(pointer: coarse)').matches;
 
 /* ---------- HUD ---------- */
 const $ = id => document.getElementById(id);
+const logText = e => e.id === 'init' ? t.log_init : byId[e.id] ? fmt(t.log_explore, { place: byId[e.id].name.toLowerCase() }) : (e.m || '');
 function renderHUD(fresh){
-  $('progressText').textContent = `${visited.size} of ${PLACES.length} visited`;
+  $('progressText').textContent = fmt(t.progress, { n: visited.size, total: PLACES.length });
   $('pips').innerHTML = PLACES.map(p => `<span class="pip${visited.has(p.id)?' on':''}"></span>`).join('');
-  $('log').innerHTML = log.slice(0,5).map((e,i) => `<li class="${fresh && i===0 ? 'fresh':''}"><span class="h">${e.h}</span><span>${esc(e.m)}</span></li>`).join('');
+  $('log').innerHTML = log.slice(0,5).map((e,i) => `<li class="${fresh && i===0 ? 'fresh':''}"><span class="h">${e.h}</span><span>${esc(logText(e))}</span></li>`).join('');
   if (fresh){ const pr = $('progress'); pr.classList.remove('pulse'); void pr.offsetWidth; pr.classList.add('pulse'); }
 }
-$('hint').innerHTML = coarse ? 'Tap anywhere to walk. Tap a building to go in.' : 'Walk with the arrow keys or WASD. Press <kbd>E</kbd> at a door.';
-$('introControls').innerHTML = coarse ? 'Tap anywhere to walk, and tap a building to go in.' : 'Arrow keys or WASD to walk, E to enter. You can also click anywhere to walk there.';
+$('hint').innerHTML = coarse ? t.hint_touch : t.hint_keys;
+$('introControls').innerHTML = coarse ? t.controls_touch : t.controls_keys;
 
 /* ---------- Panels ---------- */
 let lastFocus = null;
@@ -754,7 +784,7 @@ function openPlace(p){
   current = p; game = null;
   $('panelEmoji').textContent = p.emoji;
   $('panelTitle').textContent = p.name;
-  $('panelSub').textContent = `${p.title} on ${BRANCH_NAME[p.branch]}`;
+  $('panelSub').textContent = fmt(t.on_branch, { title: p.title, branch: BRANCH_NAME[p.branch] });
   $('panelSwatch').style.background = `var(--${p.branch})`;
   $('panelBody').innerHTML = p.html;
   $('panelBody').scrollTop = 0;
@@ -762,7 +792,7 @@ function openPlace(p){
   if (!visited.has(p.id)){
     visited.add(p.id);
     const h = Array.from({length:7}, () => '0123456789abcdef'[Math.floor(Math.random()*16)]).join('');
-    log.unshift({ h, m:`explore: ${p.name.toLowerCase()}` });
+    log.unshift({ h, id:p.id });
     save(); renderHUD(true);
   }
   $('panelClose').focus();
@@ -775,7 +805,7 @@ function closePanel(){
 }
 function openPlaces(){
   closePanel(); paused = true;
-  $('placesList').innerHTML = PLACES.map(p => `<li><button class="btn" type="button" data-go="${p.id}"><span class="e" aria-hidden="true">${p.emoji}</span><span><b>${p.name}</b><small>${p.title}</small></span>${visited.has(p.id)?'<span class="done" aria-label="visited">✓</span>':''}</button></li>`).join('');
+  $('placesList').innerHTML = PLACES.map(p => `<li><button class="btn" type="button" data-go="${p.id}"><span class="e" aria-hidden="true">${p.emoji}</span><span><b>${p.name}</b><small>${p.title}</small></span>${visited.has(p.id)?'<span class="done" aria-label="${t.visited}">✓</span>':''}</button></li>`).join('');
   $('placesPanel').hidden = false;
   $('placesList').querySelector('button').focus();
 }
@@ -841,12 +871,29 @@ addEventListener('keydown', e => {
     return;
   }
   if (paused) return;
+  if (e.key === '+' || e.key === '='){ zoomBy(1.25); return; }
+  if (e.key === '-' || e.key === '_'){ zoomBy(1/1.25); return; }
+  if (e.key === '0'){ zoomFit(); return; }
   const onControl = e.target.closest && e.target.closest('button, a, input');
   if (KEYMAP[e.key] && !onControl){ keys[KEYMAP[e.key]] = true; e.preventDefault(); }
   else if ((e.key === 'e' || e.key === 'E' || ((e.key === 'Enter' || e.key === ' ') && !onControl)) && near){ e.preventDefault(); openPlace(near); }
 });
 addEventListener('keyup', e => { if (KEYMAP[e.key]) keys[KEYMAP[e.key]] = false; });
 addEventListener('blur', () => Object.keys(keys).forEach(k => keys[k] = false));
+$('zoomIn').onclick = () => zoomBy(1.25);
+$('zoomOut').onclick = () => zoomBy(1/1.25);
+$('zoomFit').onclick = zoomFit;
+cvs.addEventListener('wheel', e => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.1 : 1/1.1); }, { passive:false });
+// Two-finger pinch to zoom on touch screens.
+const touches = new Map(); let pinch = null;
+cvs.addEventListener('pointerdown', e => { touches.set(e.pointerId, [e.clientX, e.clientY]); if (touches.size === 2){ const [a,b] = [...touches.values()]; pinch = { d: Math.hypot(a[0]-b[0], a[1]-b[1]), z: userZoom }; route = null; autoEnter = null; tapMark = null; } });
+cvs.addEventListener('pointermove', e => {
+  if (!touches.has(e.pointerId)) return;
+  touches.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pinch && touches.size === 2){ const [a,b] = [...touches.values()]; userZoom = pinch.z * Math.hypot(a[0]-b[0], a[1]-b[1]) / pinch.d; applyZoom(); }
+});
+const endTouch = e => { touches.delete(e.pointerId); if (touches.size < 2) pinch = null; };
+['pointerup','pointercancel','pointerleave'].forEach(ev => cvs.addEventListener(ev, endTouch));
 
 function bfs(sx,sy,tx,ty){
   if (sx===tx && sy===ty) return [];
@@ -866,7 +913,7 @@ function bfs(sx,sy,tx,ty){
   return path.reverse();
 }
 cvs.addEventListener('pointerdown', e => {
-  if (paused) return;
+  if (paused || touches.size > 1) return;
   const wx = e.clientX / zoom + cam.x, wy = e.clientY / zoom + cam.y;
   let tx = Math.floor(wx / T), ty = Math.floor(wy / T);
   const ptx = Math.floor(player.x / T), pty = Math.floor((player.y - 4) / T);
@@ -966,7 +1013,7 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', buildWor
 new MutationObserver(buildWorld).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
 $('whoName').textContent = DATA.name; $('whoRole').textContent = DATA.role;
 $('introTitle').textContent = DATA.name; $('classicName').textContent = DATA.name;
-$('introRole').textContent = `${DATA.role}. I study merge conflicts that git can’t see.`;
+$('introRole').textContent = `${DATA.role}. ${t.intro_tagline}`;
 ['siteLink','introSite','classicSite'].forEach(id => { $(id).href = DATA.links.home; });
 resize(); renderHUD(false);
 if (document.fonts && document.fonts.load){ Promise.all([document.fonts.load('700 12px "Pixelify Sans"'), document.fonts.ready]).then(buildWorld).catch(() => {}); }

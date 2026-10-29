@@ -1,0 +1,23 @@
+# Navigation links for the Portuguese version (same pages, translated names).
+main:
+  - name: Sobre
+    url: /
+    weight: 10
+  - name: Artigos
+    url: /#papers
+    weight: 11
+  - name: Eventos e Palestras
+    url: /#events-and-talks
+    weight: 12
+  - name: Experiência
+    url: experience/
+    weight: 20
+  - name: Projetos
+    url: projects/
+    weight: 30
+  - name: Cursos
+    url: courses/
+    weight: 40
+  - name: 🎮 Jogo
+    url: game/
+    weight: 50

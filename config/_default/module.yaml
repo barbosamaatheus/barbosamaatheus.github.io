@@ -19,6 +19,17 @@ mounts:
   - source: hugo-blox/blox
     target: assets/dist/community/blox/
     includeFiles: '**.css'
+  # Content: English from `content/`. Portuguese uses `content-pt/` first and
+  # falls back to the English page for anything not translated yet.
+  - source: content
+    target: content
+    lang: en
+  - source: content-pt
+    target: content
+    lang: pt
+  - source: content
+    target: content
+    lang: pt
   - source: layouts
     target: layouts
   - source: assets

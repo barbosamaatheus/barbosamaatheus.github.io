@@ -1,0 +1,110 @@
+# Textos da interface da Merge Village em português (mesmas chaves de en.yaml).
+canvas_label: Uma pequena vila em pixel art organizada como um histórico do git. Use o botão Lugares ou a visualização em lista para chegar a todas as seções com teclado ou leitor de tela.
+places: Lugares
+places_sub: Vá direto para qualquer prédio
+list_view: Ver em lista
+website: Site
+back_to_website: Voltar ao site
+back_to_village: Voltar à vila
+zoom: Zoom
+zoom_in: Aproximar
+zoom_out: Afastar
+zoom_fit: Ver o mapa todo
+close: Fechar
+visit_history: Seu histórico de visitas
+progress: "{n} de {total} visitados"
+visited: visitado
+intro_tagline: Estudo conflitos de merge que o git não consegue ver.
+intro_text: Meu trabalho mora numa pequena vila desenhada como um histórico do git. Passeie e entre nos prédios.
+legend_main: "estrada main: sobre mim, palestras, pesquisa e contato"
+legend_academia: "feature/academia: formação e artigos"
+legend_industry: "feature/career: experiência e projetos"
+start: Começar a andar
+controls_touch: Toque em qualquer lugar para andar e toque num prédio para entrar.
+controls_keys: Setas ou WASD para andar, E para entrar. Você também pode clicar em qualquer lugar para ir até lá.
+hint_touch: Toque em qualquer lugar para andar. Toque num prédio para entrar.
+hint_keys: Ande com as setas ou WASD. Aperte <kbd>E</kbd> numa porta.
+done_title: Todas as branches mescladas
+done_text: Você entrou em todos os prédios. Obrigado pelo passeio.
+done_contact_text: Se quiser colaborar, meus contatos estão nos Correios.
+open_contacts: Abrir contatos
+keep_exploring: Continuar explorando
+log_init: "init: chegada na vila"
+log_explore: "explore: {place}"
+on_branch: "{title} na {branch}"
+fork_academia: academia
+fork_academia_sub: formação e artigos
+fork_industry: carreira
+fork_industry_sub: experiência e projetos
+
+date_format: January de 2006
+
+# Prédios
+home_name: Casa
+home_title: Sobre mim
+home_prompt: Entrar
+university_name: Universidade
+university_title: Formação
+university_prompt: Entrar na universidade
+library_name: Biblioteca
+library_title: Artigos
+library_prompt: Entrar na biblioteca
+stage_name: Palco
+stage_title: Eventos e palestras
+stage_prompt: Ir ao palco
+office_name: Escritório
+office_title: Experiência
+office_prompt: Entrar no escritório
+workshop_name: Espaço Maker
+workshop_title: Projetos
+workshop_prompt: Entrar no espaço maker
+lab_name: Merge Lab
+lab_title: Pesquisa
+lab_prompt: Entrar no merge lab
+post_name: Correios
+post_title: Contato
+post_prompt: Entrar nos correios
+
+# Conteúdo dos prédios
+languages: Idiomas
+lang_native: nativo
+lang_advanced: avançado
+lang_intermediate: intermediário
+lang_basic: básico
+village_note: A vila é desenhada como um histórico do git. A estrada dourada é a main. As estradas rosa e azul são branches de feature que se separam e voltam a se juntar logo antes do Merge Lab.
+date_range: "{start} a {end}"
+present: o momento
+read_more: Saiba mais
+see_publications: Ver todas as publicações
+see_events: Ver todos os eventos
+see_projects: Ver todos os projetos
+courses_taught: Cursos ministrados
+interests: Interesses
+try_it: Experimente
+try_it_text: Três merges, três resultados possíveis. Você consegue dizer em qual o git erra?
+play: "Jogar: encontre o conflito"
+contact_lead: Entre em contato se quiser colaborar.
+email: E-mail
+full_cv: Currículo acadêmico completo
+
+# Mini-jogo
+round: "Merge {n} de {total}"
+base: Base
+left_branch: Branch da esquerda
+right_branch: Branch da direita
+question: O que acontece quando essas duas branches são mescladas?
+opt_clean: "Merge limpo: funciona como as duas pessoas queriam"
+opt_textual: "Conflito textual: o git para e pede ajuda"
+opt_semantic: "Conflito semântico: o git faz o merge, mas o comportamento quebra"
+correct: Correto
+not_quite: Não exatamente
+git_produces: O que o git produz
+next_merge: Próximo merge
+see_score: Ver minha pontuação
+score: "Você acertou {score} de {total}"
+score_text: "Conflitos semânticos são os que o git não vê: o merge parece certo, os testes podem até passar, e o comportamento continua errado. Meu doutorado é sobre ferramentas de merge que os detectam antes de chegarem à produção."
+play_again: Jogar de novo
+back_to_lab: Voltar ao laboratório
+explain_textual: As duas branches mudaram a mesma linha, então o git para e pede que alguém escolha. Chato, mas pelo menos é visível.
+explain_clean: As mudanças estão em métodos diferentes que não compartilham estado. O git faz o merge e o programa faz o que as duas pessoas esperavam.
+explain_semantic: O git faz esse merge sem nenhum aviso, mas a atribuição da branch da direita sobrescreve o desconto da branch da esquerda, e o cliente nunca recebe o desconto. Isso é uma interferência de overriding assignment, o tipo de conflito que minha pesquisa detecta com análise estática.
