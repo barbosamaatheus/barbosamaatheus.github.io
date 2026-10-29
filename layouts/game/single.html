@@ -173,6 +173,16 @@ kbd{font-family:var(--pixel);font-size:.85em;border:2px solid currentColor;paddi
 .hint.gone{opacity:0;pointer-events:none}
 .zoom{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;flex-direction:column;gap:8px;z-index:4}
 .zoom .btn{width:42px;height:42px;padding:0;font-size:20px;display:grid;place-items:center}
+/* Character editor */
+.look-top{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+#lookPreview{image-rendering:pixelated;border:2px solid var(--line);background:var(--panel-2);flex:none}
+.look-note{font-size:14px;color:var(--muted);margin:0}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 4px}
+.opt{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 6px 6px;border:2px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+.opt canvas{image-rendering:pixelated}
+.opt[aria-pressed="true"]{background:var(--panel-2);box-shadow:inset 0 0 0 3px var(--main)}
+.sw{width:36px;height:36px;border:3px solid var(--line);cursor:pointer;padding:0}
+.sw[aria-pressed="true"]{outline:3px solid var(--main);outline-offset:2px}
 body:has(.prompt:not([hidden])) .hint{opacity:0;pointer-events:none}
 
 .prompt{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:6;font-size:17px;padding:10px 16px}
@@ -264,7 +274,14 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
   .who p{font-size:12px}
   .hud .btn.small{font-size:12px;padding:4px 7px}
   .progress{font-size:13px;padding:4px 8px}
-  .dialog{max-height:78vh}
+  /* Dialogs become bottom sheets on phones */
+  .dialog{left:0;right:0;transform:none;width:100%;bottom:0;max-height:60vh;border-left:0;border-right:0;border-bottom:0;box-shadow:0 -4px 0 var(--shadow);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .dialog header{padding:10px 12px;gap:10px}
+  .dialog .emoji{font-size:24px}
+  .dialog h2{font-size:18px}
+  .dialog .sub{font-size:12px}
+  .dialog .close kbd{display:none}
+  .body p{font-size:15px}
   .dialog .body{padding:12px 14px 16px}
 }
 @media (max-width: 520px){
@@ -305,6 +322,7 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
 </aside>
 
 <div class="zoom" role="group" aria-label="{{ $L.zoom }}">
+  <button class="btn" id="lookBtn" type="button" aria-label="{{ $L.character }}" title="{{ $L.character }}">👤</button>
   <button class="btn" id="sceneBtn" type="button" aria-label="{{ $L.scenery }}" title="{{ $L.scenery }}">🎨</button>
   <button class="btn" id="zoomIn" type="button" aria-label="{{ $L.zoom_in }}" title="{{ $L.zoom_in }} (+)">+</button>
   <button class="btn" id="zoomOut" type="button" aria-label="{{ $L.zoom_out }}" title="{{ $L.zoom_out }} (−)">−</button>
@@ -335,6 +353,18 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
     <button class="btn small close" id="placesClose" type="button">{{ $L.close }}<kbd>Esc</kbd></button>
   </header>
   <div class="body"><ul class="places" id="placesList"></ul></div>
+</section>
+
+<section class="dialog box" id="lookPanel" role="dialog" aria-modal="false" aria-labelledby="lookTitle" hidden>
+  <header>
+    <span class="emoji" aria-hidden="true">👤</span>
+    <div>
+      <h2 id="lookTitle">{{ $L.character }}</h2>
+      <div class="sub">{{ $L.character_sub }}</div>
+    </div>
+    <button class="btn small close" id="lookClose" type="button">{{ $L.close }}<kbd>Esc</kbd></button>
+  </header>
+  <div class="body" id="lookBody"></div>
 </section>
 
 <section class="dialog box" id="infoPanel" role="dialog" aria-modal="false" aria-labelledby="infoTitle" hidden>
@@ -374,6 +404,7 @@ pre.code .C{background:var(--tint-c);box-shadow:inset 4px 0 0 var(--bad);font-we
     <p class="controls" id="introControls"></p>
     <div class="row">
       <button class="btn primary" id="startBtn" type="button">{{ $L.start }}</button>
+      <button class="btn" id="introLook" type="button">👤 {{ $L.character }}</button>
       <button class="btn" id="introClassic" type="button">{{ $L.list_view }}</button>
       <a class="btn" id="introSite" href="#">{{ $L.back_to_website }}</a>
     </div>
@@ -858,7 +889,11 @@ function shade(hex, amt){
 /* ---------- Canvas setup ---------- */
 const cvs = document.getElementById('world'), ctx = cvs.getContext('2d');
 let off = null, R = 1, zoom = 1, baseZoom = 1, userZoom = 1, dpr = 1, vw = 0, vh = 0;
-const cam = { x:0, y:0 };
+const cam = { x:0, y:0 }, camF = { x:0, y:0, ready:false };
+// While a landmark note is open, the camera shows the landmark instead of the player.
+let camFocus = null;
+const hudEl = document.querySelector('.hud');
+const hudBottom = () => hudEl.getBoundingClientRect().bottom + 4;
 function resize(){
   vw = innerWidth; vh = innerHeight;
   dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -869,7 +904,7 @@ function resize(){
   applyZoom(true);
 }
 // The smallest zoom shows the whole village; the largest is a close-up.
-const fitZoom = () => Math.min(vw/(W*T), vh/(H*T));
+const fitZoom = () => Math.min(vw/(W*T), (vh - hudBottom())/(H*T));
 function applyZoom(force){
   const minZ = fitZoom(), maxZ = 3;
   zoom = Math.max(minZ, Math.min(maxZ, baseZoom*userZoom));
@@ -1008,35 +1043,73 @@ function canStand(x,y){
   const pts = [[x-6,y-8],[x+6,y-8],[x-6,y-1],[x+6,y-1]];
   return pts.every(([px,py]) => !blocked(Math.floor(px/T), Math.floor(py/T)));
 }
-function drawPlayer(c){
-  const x = Math.round(player.x), y = Math.round(player.y);
-  const step = player.moving ? (Math.floor(player.anim*8) % 2) : -1;
-  const bob = player.moving && step===0 ? -1 : 0;
+// The visitor builds their own character: no gender labels, just a look.
+const HAIRS = ['short', 'long', 'curly', 'bun', 'cap'];
+const HAIR_COLORS = ['#2b1d14', '#6b3e1f', '#c9943a', '#a3a3ad', '#c2477e'];
+const SKINS = ['#f2cba8', '#e0ac7e', '#c98a5c', '#9a6440', '#6b4329'];
+const OUTFITS = ['main', 'academia', 'industry', '#2f8f62', '#7a4fb0'];
+const LOOK_KEY = 'mergeVillageLook';
+const LOOK = { hair:'short', hairColor:0, skin:2, outfit:0 };
+try { Object.assign(LOOK, JSON.parse(localStorage.getItem(LOOK_KEY) || '{}')); } catch (e) {}
+if (!HAIRS.includes(LOOK.hair)) LOOK.hair = 'short';
+const outfitColor = i => { const k = OUTFITS[i] ?? OUTFITS[0]; return BC[k] || k; };
+function drawCharacter(c, x, y, dir, moving, anim, look){
+  const step = moving ? (Math.floor(anim*8) % 2) : -1;
+  const bob = moving && step===0 ? -1 : 0, hy = y + bob;
+  const skin = SKINS[look.skin] || SKINS[2], hc = HAIR_COLORS[look.hairColor] || HAIR_COLORS[0];
+  const side = dir === 'left' || dir === 'right';
   c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x, y, 8, 3, 0, 0, Math.PI*2); c.fill();
   // legs
   c.fillStyle = '#2b2a45';
   c.fillRect(x-5, y-8 - (step===0?2:0), 4, 8 - (step===0?1:0));
   c.fillRect(x+1, y-8 - (step===1?2:0), 4, 8 - (step===1?1:0));
   // body
-  c.fillStyle = BC.main; c.fillRect(x-7, y-17+bob, 14, 10);
-  c.fillStyle = '#1f1d36'; c.fillRect(x-7, y-9+bob, 14, 2);
+  c.fillStyle = outfitColor(look.outfit); c.fillRect(x-7, hy-17, 14, 10);
+  c.fillStyle = '#1f1d36'; c.fillRect(x-7, hy-9, 14, 2);
   // arms
-  c.fillStyle = '#b97c4e';
-  if (player.dir==='left' || player.dir==='right'){ c.fillRect(x-2, y-15+bob, 4, 7); }
-  else { c.fillRect(x-9, y-16+bob, 2, 7); c.fillRect(x+7, y-16+bob, 2, 7); }
+  c.fillStyle = shade(skin, .12);
+  if (side) c.fillRect(x-2, hy-15, 4, 7);
+  else { c.fillRect(x-9, hy-16, 2, 7); c.fillRect(x+7, hy-16, 2, 7); }
+  // hair behind the head
+  c.fillStyle = hc;
+  if (look.hair === 'curly' && dir !== 'up'){ c.beginPath(); c.arc(x, hy-25, 10, 0, Math.PI*2); c.fill(); }
+  // Long hair falls on both sides of the face, down to the shoulders.
+  if (look.hair === 'long' && dir === 'down'){ c.fillRect(x-8, hy-28, 3, 15); c.fillRect(x+5, hy-28, 3, 15); }
   // head
-  c.fillStyle = '#c98a5c'; c.fillRect(x-6, y-28+bob, 12, 11);
-  c.fillStyle = '#2b1d14';
-  c.fillRect(x-7, y-30+bob, 14, 5);
-  if (player.dir==='up') c.fillRect(x-7, y-30+bob, 14, 11);
-  if (player.dir==='left') c.fillRect(x+3, y-30+bob, 4, 9);
-  if (player.dir==='right') c.fillRect(x-7, y-30+bob, 4, 9);
+  c.fillStyle = skin; c.fillRect(x-6, hy-28, 12, 11);
+  // hair on top
+  c.fillStyle = hc;
+  if (look.hair === 'curly'){
+    if (dir === 'up'){ c.beginPath(); c.arc(x, hy-25, 10, 0, Math.PI*2); c.fill(); }
+    else { c.beginPath(); c.arc(x-5, hy-30, 4, 0, Math.PI*2); c.arc(x, hy-32, 4, 0, Math.PI*2); c.arc(x+5, hy-30, 4, 0, Math.PI*2); c.fill(); c.fillRect(x-7, hy-31, 14, 4); }
+  } else if (look.hair === 'cap'){
+    const cap = shade(outfitColor(look.outfit), .25);
+    if (dir !== 'up'){ c.fillRect(x-7, hy-26, 2, 4); c.fillRect(x+5, hy-26, 2, 4); }
+    c.fillStyle = cap; c.fillRect(x-7, hy-31, 14, 6);
+    c.fillStyle = shade(cap, .3);
+    if (dir === 'down') c.fillRect(x-7, hy-26, 14, 2);
+    if (dir === 'left') c.fillRect(x-11, hy-26, 6, 2);
+    if (dir === 'right') c.fillRect(x+5, hy-26, 6, 2);
+  } else {
+    c.fillRect(x-7, hy-30, 14, 5);
+    if (look.hair === 'long'){
+      if (dir === 'up') c.fillRect(x-7, hy-30, 14, 17);
+      if (dir === 'left') c.fillRect(x+2, hy-30, 5, 16);
+      if (dir === 'right') c.fillRect(x-7, hy-30, 5, 16);
+    } else {
+      if (dir === 'up') c.fillRect(x-7, hy-30, 14, 11);
+      if (dir === 'left') c.fillRect(x+3, hy-30, 4, 9);
+      if (dir === 'right') c.fillRect(x-7, hy-30, 4, 9);
+    }
+    if (look.hair === 'bun'){ c.beginPath(); c.arc(dir === 'left' ? x+3 : dir === 'right' ? x-3 : x, hy-33, 4, 0, Math.PI*2); c.fill(); }
+  }
   // eyes
   c.fillStyle = '#1f1d36';
-  if (player.dir==='down'){ c.fillRect(x-4, y-22+bob, 2, 3); c.fillRect(x+2, y-22+bob, 2, 3); }
-  if (player.dir==='left') c.fillRect(x-4, y-22+bob, 2, 3);
-  if (player.dir==='right') c.fillRect(x+2, y-22+bob, 2, 3);
+  if (dir==='down'){ c.fillRect(x-4, hy-22, 2, 3); c.fillRect(x+2, hy-22, 2, 3); }
+  if (dir==='left') c.fillRect(x-4, hy-22, 2, 3);
+  if (dir==='right') c.fillRect(x+2, hy-22, 2, 3);
 }
+function drawPlayer(c){ drawCharacter(c, Math.round(player.x), Math.round(player.y), player.dir, player.moving, player.anim, LOOK); }
 
 /* ---------- State ---------- */
 let visited = new Set();
@@ -1066,7 +1139,7 @@ $('introControls').innerHTML = coarse ? t.controls_touch : t.controls_keys;
 /* ---------- Panels ---------- */
 let lastFocus = null;
 function openPlace(p){
-  closePlaces();
+  closeOtherSheets('panel');
   paused = true; route = null; autoEnter = null; Object.keys(keys).forEach(k => keys[k] = false);
   current = p; game = null;
   $('panelEmoji').textContent = p.emoji;
@@ -1091,7 +1164,7 @@ function closePanel(){
   if (!celebrated && visited.size === PLACES.length){ celebrated = true; celebrate(); }
 }
 function openPlaces(){
-  closePanel(); paused = true;
+  closeOtherSheets('placesPanel'); paused = true;
   $('placesList').innerHTML = PLACES.map(p => `<li><button class="btn" type="button" data-go="${p.id}"><span class="e" aria-hidden="true">${p.emoji}</span><span><b>${p.name}</b><small>${p.title}</small></span>${visited.has(p.id)?'<span class="done" aria-label="${t.visited}">✓</span>':''}</button></li>`).join('');
   $('placesPanel').hidden = false;
   $('placesList').querySelector('button').focus();
@@ -1100,15 +1173,18 @@ function closePlaces(){ if ($('placesPanel').hidden) return; $('placesPanel').hi
 /* Points of interest in the Nordeste scene: click or tap them for a short note. */
 const inRect = (x,y,[rx,ry,rw,rh]) => x >= rx && x <= rx+rw && y >= ry && y <= ry+rh;
 const isPalm = (tx,ty) => ty >= 14 || hashXY(tx,ty) % 3 === 0;
+// One cashew tree near Home gets a marker; other trees stay plain so tapping near them walks.
+const CASHEW = (() => { let best = [6,5], bd = 1e9;
+  for (let y=1;y<SEA_Y-1;y++) for (let x=1;x<W-1;x++) if (G0[I(x,y)] === TREE && !isPalm(x,y) && !nearLagoon(x,y)){ const d = Math.hypot(x-7, y-8); if (d < bd){ bd = d; best = [x,y]; } }
+  return best; })();
 const NORDESTE_POIS = [
   { id:'jangada', emoji:'⛵', marker:[33*T+30, 18*T-10], hit:(x,y) => inRect(x,y,[33*T-6, 18*T-6, 56, 46]) },
-  { id:'lighthouse', emoji:'🗼', marker:[42.3*T, 12.6*T], hit:(x,y) => inRect(x,y,[39*T, 12*T, 4*T, 6*T]) },
+  { id:'lighthouse', emoji:'🗼', marker:[42.3*T, 12.6*T], hit:(x,y) => inRect(x,y,[41*T-24, 12*T, 48, 3.4*T]) || inRect(x,y,[39*T, 15*T, 4*T, 3*T]) },
   { id:'bridge', emoji:'🌉', marker:[32.5*T, 14.6*T], hit:(x,y) => inRect(x,y,[29.6*T, 15.15*T, 5.8*T, .85*T]) },
-  { id:'beach', emoji:'⛱️', marker:[UMBRELLAS[1][0]*T+16, UMBRELLAS[1][1]*T-14], hit:(x,y,tx,ty) =>
-      UMBRELLAS.some(([ux,uy]) => ux === tx && uy === ty) || (G[I(tx,ty)] === TREE && !nearLagoon(tx,ty) && isPalm(tx,ty)) },
-  { id:'mangrove', emoji:'🌿', marker:[30.4*T, 16.9*T], hit:(x,y,tx,ty) => isLagoon(tx,ty) || (G[I(tx,ty)] === TREE && nearLagoon(tx,ty)) },
+  { id:'beach', emoji:'⛱️', marker:[UMBRELLAS[1][0]*T+16, UMBRELLAS[1][1]*T-14], hit:(x,y,tx,ty) => UMBRELLAS.some(([ux,uy]) => ux === tx && uy === ty) },
+  { id:'mangrove', emoji:'🌿', marker:[30.4*T, 16.9*T], hit:(x,y,tx,ty) => isLagoon(tx,ty) },
   { id:'reef', emoji:'🐠', marker:[11*T, 18.45*T], hit:(x,y,tx,ty) => ty >= SEA_Y },
-  { id:'cashew', emoji:'🌳', hit:(x,y,tx,ty) => G[I(tx,ty)] === TREE && !nearLagoon(tx,ty) && !isPalm(tx,ty) },
+  { id:'cashew', emoji:'🌳', marker:[CASHEW[0]*T+16, CASHEW[1]*T-12], hit:(x,y,tx,ty) => tx === CASHEW[0] && ty === CASHEW[1] },
 ];
 const CAMPUS_POIS = CAMPUS_SIGNS.map(c => ({
   id: c.id, emoji: '🏛️', marker: [c.x*T + 16, c.y*T - 6],
@@ -1123,19 +1199,63 @@ function poiAt(x, y){
   return pois.find(p => p.hit(x, y, tx, ty)) || null;
 }
 function openInfo(poi){
-  closePanel(); closePlaces(); closeScenes(); paused = true; route = null; autoEnter = null;
+  closeOtherSheets('infoPanel'); paused = true; route = null; autoEnter = null;
   $('infoEmoji').textContent = poi.emoji;
   $('infoTitle').textContent = t['poi_' + poi.id + '_title'];
   $('infoSub').textContent = t['scene_' + scene];
   $('infoBody').innerHTML = `<p>${esc(t['poi_' + poi.id + '_text'])}</p>`;
+  camFocus = poi.marker || null;
   $('infoPanel').hidden = false; $('prompt').hidden = true;
   $('infoClose').focus();
 }
-function closeInfo(){ if ($('infoPanel').hidden) return; $('infoPanel').hidden = true; paused = false; cvs.focus({ preventScroll:true }); }
+function closeInfo(){ camFocus = null; if ($('infoPanel').hidden) return; $('infoPanel').hidden = true; paused = false; cvs.focus({ preventScroll:true }); }
 $('infoClose').onclick = closeInfo;
 $('poiBox').addEventListener('click', e => { const b = e.target.closest('[data-poi]'); if (b) openInfo(scenePois().find(p => p.id === b.dataset.poi)); });
+function drawPreview(canvas, look, scale){
+  const pc = canvas.getContext('2d');
+  pc.setTransform(1,0,0,1,0,0); pc.clearRect(0, 0, canvas.width, canvas.height);
+  pc.imageSmoothingEnabled = false; pc.setTransform(scale,0,0,scale,0,0);
+  drawCharacter(pc, canvas.width/scale/2, canvas.height/scale - 4, 'down', false, 0, look);
+}
+function renderLook(){
+  const sw = (key, colors) => colors.map((col, i) => `<button class="sw" type="button" data-look="${key}" data-val="${i}" aria-pressed="${LOOK[key] === i}" aria-label="${esc(t[key])} ${i+1}" style="background:${col}"></button>`).join('');
+  $('lookBody').innerHTML = `
+    <div class="look-top"><canvas id="lookPreview" width="96" height="120" aria-hidden="true"></canvas><p class="look-note">${esc(t.character_note)}</p></div>
+    <h3>${esc(t.hair)}</h3><div class="opts">${HAIRS.map(h => `<button class="opt" type="button" data-look="hair" data-val="${h}" aria-pressed="${LOOK.hair === h}"><canvas width="44" height="56" data-prev="${h}" aria-hidden="true"></canvas><span>${esc(t['hair_' + h])}</span></button>`).join('')}</div>
+    <h3>${esc(t.hairColor)}</h3><div class="opts">${sw('hairColor', HAIR_COLORS)}</div>
+    <h3>${esc(t.skin)}</h3><div class="opts">${sw('skin', SKINS)}</div>
+    <h3>${esc(t.outfit)}</h3><div class="opts">${sw('outfit', OUTFITS.map((_, i) => outfitColor(i)))}</div>`;
+  drawPreview($('lookPreview'), LOOK, 3);
+  $('lookBody').querySelectorAll('[data-prev]').forEach(cv => drawPreview(cv, { ...LOOK, hair: cv.dataset.prev }, 1.4));
+}
+function openLook(){
+  $('intro').hidden = true; closeOtherSheets('lookPanel'); paused = true;
+  renderLook(); $('lookPanel').hidden = false;
+  $('lookBody').querySelector('[aria-pressed="true"]').focus();
+}
+function closeLook(){ if ($('lookPanel').hidden) return; $('lookPanel').hidden = true; paused = false; cvs.focus({ preventScroll:true }); }
+$('lookBody').addEventListener('click', e => {
+  const b = e.target.closest('[data-look]'); if (!b) return;
+  const key = b.dataset.look;
+  LOOK[key] = key === 'hair' ? b.dataset.val : Number(b.dataset.val);
+  try { localStorage.setItem(LOOK_KEY, JSON.stringify(LOOK)); } catch (e) {}
+  renderLook();
+  $('lookBody').querySelector(`[data-look="${key}"][aria-pressed="true"]`).focus();
+});
+$('lookBtn').onclick = openLook;
+$('introLook').onclick = openLook;
+$('lookClose').onclick = closeLook;
+// Any open sheet; tapping the map outside it closes it.
+const SHEETS = { panel:() => closePanel(), infoPanel:() => closeInfo(), placesPanel:() => closePlaces(), scenePanel:() => closeScenes(), lookPanel:() => closeLook() };
+const openSheet = () => Object.keys(SHEETS).find(id => !$(id).hidden);
+// Only one sheet at a time: opening one hides the others (the opener keeps the game paused).
+function closeOtherSheets(keep){
+  Object.keys(SHEETS).forEach(id => { if (id !== keep) $(id).hidden = true; });
+  if (keep !== 'panel'){ current = null; game = null; }
+  if (keep !== 'infoPanel') camFocus = null;
+}
 function openScenes(){
-  closePanel(); closePlaces(); paused = true;
+  closeOtherSheets('scenePanel'); paused = true;
   $('sceneList').innerHTML = SCENE_ORDER.map(id => [id, SCENES[id]]).map(([id, sc]) => `<li><button class="btn" type="button" data-scene="${id}" aria-pressed="${id === scene}"><span class="e" aria-hidden="true">${sc.emoji}</span><span><b>${esc(t['scene_' + id])}</b><small>${esc(t['scene_' + id + '_desc'])}</small></span>${id === scene ? `<span class="done" aria-label="${esc(t.current)}">✓</span>` : ''}</button></li>`).join('');
   $('poiBox').innerHTML = scenePois().length ? `<h3>${esc(t.poi_heading)}</h3><p class="meta">${esc(t.poi_hint)}</p><ul class="places">${scenePois().map(p => `<li><button class="btn" type="button" data-poi="${p.id}"><span class="e" aria-hidden="true">${p.emoji}</span><span><b>${esc(t['poi_' + p.id + '_title'])}</b></span></button></li>`).join('')}</ul>` : '';
   $('scenePanel').hidden = false;
@@ -1212,6 +1332,7 @@ addEventListener('keydown', e => {
     else if (!$('placesPanel').hidden) closePlaces();
     else if (!$('scenePanel').hidden) closeScenes();
     else if (!$('infoPanel').hidden) closeInfo();
+    else if (!$('lookPanel').hidden) closeLook();
     else if (!$('classic').hidden) closeClassic();
     else if (!$('done').hidden) $('doneClose').click();
     return;
@@ -1242,6 +1363,21 @@ cvs.addEventListener('pointermove', e => {
 const endTouch = e => { touches.delete(e.pointerId); if (touches.size < 2) pinch = null; };
 ['pointerup','pointercancel','pointerleave'].forEach(ev => cvs.addEventListener(ev, endTouch));
 
+// Walk in straight lines where nothing is in the way, instead of tile by tile.
+function lineClear(ax, ay, bx, by){
+  const n = Math.ceil(Math.hypot(bx-ax, by-ay) / 4);
+  for (let i=1;i<=n;i++) if (!canStand(ax + (bx-ax)*i/n, ay + (by-ay)*i/n)) return false;
+  return true;
+}
+function smoothRoute(path){
+  const out = []; let cx = player.x, cy = player.y, i = 0;
+  while (i < path.length){
+    let j = path.length - 1;
+    while (j > i && !lineClear(cx, cy, path[j][0], path[j][1])) j--;
+    out.push(path[j]); [cx, cy] = path[j]; i = j + 1;
+  }
+  return out;
+}
 function bfs(sx,sy,tx,ty){
   if (sx===tx && sy===ty) return [];
   const prev = new Int32Array(W*H).fill(-1), q = [I(sx,sy)]; prev[I(sx,sy)] = I(sx,sy);
@@ -1260,7 +1396,8 @@ function bfs(sx,sy,tx,ty){
   return path.reverse();
 }
 cvs.addEventListener('pointerdown', e => {
-  if (paused || touches.size > 1) return;
+  if (touches.size > 1) return;
+  if (paused){ const open = openSheet(); if (open) SHEETS[open](); return; }
   const wx = e.clientX / zoom + cam.x, wy = e.clientY / zoom + cam.y;
   const poi = poiAt(wx, wy);
   if (poi){ openInfo(poi); return; }
@@ -1281,7 +1418,7 @@ cvs.addEventListener('pointerdown', e => {
   if (!target) return;
   const path = bfs(ptx, pty, target[0], target[1]);
   if (!path) return;
-  route = path;
+  route = smoothRoute(path);
   tapMark = { x:target[0]*T+16, y:target[1]*T+20, t:0 };
   if (!route.length){ route = null; if (autoEnter){ const p = autoEnter; autoEnter = null; openPlace(p); } }
 });
@@ -1320,9 +1457,15 @@ function frame(now){
   const dt = Math.min(.05, (now - t0)/1000); t0 = now; clock += dt;
   update(dt);
   const viewW = vw/zoom, viewH = vh/zoom, worldW = W*T, worldH = H*T;
-  cam.x = viewW >= worldW ? (worldW-viewW)/2 : Math.max(0, Math.min(worldW-viewW, player.x - viewW/2));
-  cam.y = viewH >= worldH ? (worldH-viewH)/2 : Math.max(0, Math.min(worldH-viewH, player.y - 12 - viewH/2));
-  const S0 = zoom*dpr; cam.x = Math.round(cam.x*S0)/S0; cam.y = Math.round(cam.y*S0)/S0;
+  const topPad = hudBottom(), sheet = openSheet(), bottomPad = sheet ? $(sheet).offsetHeight : 0;
+  const availPx = vh - topPad - bottomPad, midPx = topPad + availPx/2;
+  const fx = camFocus ? camFocus[0] : player.x, fy = camFocus ? camFocus[1] + 30 : player.y;
+  const tx = viewW >= worldW ? (worldW-viewW)/2 : Math.max(0, Math.min(worldW-viewW, fx - viewW/2));
+  const ty = availPx/zoom >= worldH ? worldH/2 - midPx/zoom
+    : Math.max(-topPad/zoom, Math.min(worldH - (vh - bottomPad)/zoom, fy - 12 - midPx/zoom));
+  if (!camF.ready || reduced){ camF.x = tx; camF.y = ty; camF.ready = true; }
+  else { const k = Math.min(1, dt*10); camF.x += (tx - camF.x)*k; camF.y += (ty - camF.y)*k; }
+  const S0 = zoom*dpr; cam.x = Math.round(camF.x*S0)/S0; cam.y = Math.round(camF.y*S0)/S0;
 
   ctx.setTransform(1,0,0,1,0,0);
   ctx.fillStyle = pal.edge || pal.tree; ctx.fillRect(0,0,cvs.width,cvs.height);

@@ -146,3 +146,17 @@ poi_cin_title: CIn UFPE · Recife
 poi_cin_text: The Centro de Informática of the Federal University of Pernambuco, in the Cidade Universitária in Recife, is one of Brazil’s leading computing schools, and its three undergraduate programs are among the most sought after at UFPE. I did my master’s there (2020–2022) and I’m now doing my PhD in the SPGroup, researching semantic merge conflicts.
 poi_ifpe_title: IFPE Campus Belo Jardim
 poi_ifpe_text: In the Agreste of Pernambuco, the campus began as an agricultural school in 1958, became the Escola Agrotécnica Federal de Belo Jardim in 1979 and joined the Federal Institute of Pernambuco in 2008. Today it also offers a bachelor’s degree in Software Engineering. I have taught Software Engineering there since July 2026 and coordinate the GirliES extension project.
+
+# Character
+character: Character
+character_sub: Make it your own
+character_note: No labels here. Pick the look that feels like you.
+hair: Hair
+hairColor: Hair colour
+skin: Skin tone
+outfit: Outfit
+hair_short: Short
+hair_long: Long
+hair_curly: Curly
+hair_bun: Bun
+hair_cap: Cap

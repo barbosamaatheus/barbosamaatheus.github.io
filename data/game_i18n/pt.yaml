@@ -144,3 +144,17 @@ poi_cin_title: CIn UFPE · Recife
 poi_cin_text: O Centro de Informática da Universidade Federal de Pernambuco, na Cidade Universitária, no Recife, é um dos principais centros de computação do Brasil, e seus três cursos de graduação estão entre os mais concorridos da UFPE. Fiz o mestrado lá (2020–2022) e hoje faço o doutorado no SPGroup, pesquisando conflitos semânticos de merge.
 poi_ifpe_title: IFPE Campus Belo Jardim
 poi_ifpe_text: No Agreste pernambucano, o campus começou como escola agrícola em 1958, virou Escola Agrotécnica Federal de Belo Jardim em 1979 e passou a fazer parte do Instituto Federal de Pernambuco em 2008. Hoje também oferece o bacharelado em Engenharia de Software. Sou professor de Engenharia de Software lá desde julho de 2026 e coordeno o projeto de extensão GirliES.
+
+# Personagem
+character: Personagem
+character_sub: Monte do seu jeito
+character_note: Aqui não tem rótulo. Escolha o visual que combina com você.
+hair: Cabelo
+hairColor: Cor do cabelo
+skin: Tom de pele
+outfit: Roupa
+hair_short: Curto
+hair_long: Longo
+hair_curly: Cacheado
+hair_bun: Coque
+hair_cap: Boné
